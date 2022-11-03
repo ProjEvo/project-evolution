@@ -1,4 +1,4 @@
-$ Project Evolution
+# Project Evolution
 
 Created by Timothy (`tdg3`), Numair (`hajyani2`), Shivjeet (`schana2`), and Marcus (`zhiyu`).
 
