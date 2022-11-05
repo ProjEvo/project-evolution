@@ -1,6 +1,6 @@
 # Project Evolution
 
-Created by Timothy (`tdg3`), Numair (`hajyani2`), Shivjeet (`schana2`), and Marcus (`zhiyu`).
+Created by Timothy (`tdg3`), Numair (`hajyani2`), Shivjeet (`schana2`), and Marcus (`zhiyu7`).
 
 ## Intro
 
