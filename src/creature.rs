@@ -2,8 +2,9 @@
 
 use uuid::{self, Uuid};
 
-/// A creature, made up of [Node]s and [Muscle]s
+/// A creature, made up of [Node]s and [Muscle]s. Contains a unique id for reference.
 pub struct Creature {
+    pub id: Uuid,
     pub nodes: Vec<Node>,
     pub muscles: Vec<Muscle>,
 }
@@ -11,7 +12,11 @@ pub struct Creature {
 impl Creature {
     /// Creates a new creature from a vector of [Node]s and a vector of [Muscle]s
     pub fn new(nodes: Vec<Node>, muscles: Vec<Muscle>) -> Creature {
-        Creature { nodes, muscles }
+        Creature {
+            id: Uuid::new_v4(),
+            nodes,
+            muscles,
+        }
     }
 }
 
@@ -33,7 +38,7 @@ impl Node {
     }
 }
 
-/// A muscle, defined by the ids of the two nodes it connects, and it's own unique id
+/// A muscle, defined by the ids of the two nodes it connects.  Contains a unique id for reference.
 pub struct Muscle {
     pub id: Uuid,
     pub from_id: Uuid,
