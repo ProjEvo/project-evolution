@@ -2,6 +2,8 @@
 
 pub mod creature;
 
+pub mod ui;
+
 #[cfg(test)]
 mod tests {
     #[test]
