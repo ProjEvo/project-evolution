@@ -17,7 +17,7 @@ struct MyEguiApp {}
 
 //Initializes the New Interface that will create the objects on the screen
 impl MyEguiApp {
-    fn new(cc: &eframe::CreationContext<'_>) -> Self {
+    fn new(_cc: &eframe::CreationContext<'_>) -> Self {
         // Customize egui here with cc.egui_ctx.set_fonts and cc.egui_ctx.set_visuals.
         // Restore app state using cc.storage (requires the "persistence" feature).
         // Use the cc.gl (a glow::Context) to create graphics shaders and buffers that you can use
@@ -28,7 +28,7 @@ impl MyEguiApp {
 
 impl eframe::App for MyEguiApp {
     //Function Updates the screen that is to be blitted (currently very underdeveloped, needs to be fully realized soon)
-    fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         // initializes a central panel of the UI with contents to be added
 
         egui::CentralPanel::default().show(ctx, |ui| {
