@@ -1,8 +1,14 @@
 // File creates User Interface (Window, Button, [Creature] Creation, and [Creature] Evolution)
 use eframe::egui;
 
+use crate::res;
+
 pub fn init() {
-    let native_options = eframe::NativeOptions::default();
+    let native_options = eframe::NativeOptions {
+        icon_data: Some(res::load_icon_data()),
+        ..Default::default()
+    };
+
     eframe::run_native(
         "Project Evolution",
         native_options,

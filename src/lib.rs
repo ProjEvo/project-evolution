@@ -1,7 +1,7 @@
 //! The library behind Project Evolution
 
 pub mod creature;
-
+pub mod res;
 pub mod ui;
 
 #[cfg(test)]
