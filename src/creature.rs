@@ -1,21 +1,62 @@
 //! Contains the [Creature] struct and all related components of it
 
+use std::collections::HashMap;
+
 use uuid::{self, Uuid};
 
 /// A creature, made up of [Node]s and [Muscle]s. Contains a unique id for reference.
 pub struct Creature {
-    pub id: Uuid,
-    pub nodes: Vec<Node>,
-    pub muscles: Vec<Muscle>,
+    id: Uuid,
+    nodes: HashMap<Uuid, Node>,
+    muscles: HashMap<Uuid, Muscle>,
 }
 
 impl Creature {
-    /// Creates a new creature from a vector of [Node]s and a vector of [Muscle]s
-    pub fn new(nodes: Vec<Node>, muscles: Vec<Muscle>) -> Creature {
+    /// Creates a new empty creature
+    pub fn new() -> Creature {
         Creature {
             id: Uuid::new_v4(),
-            nodes,
-            muscles,
+            nodes: HashMap::new(),
+            muscles: HashMap::new(),
+        }
+    }
+
+    /// Returns the unique id of the [Creature]
+    pub fn id(&self) -> &Uuid {
+        &self.id
+    }
+
+    /// Returns the nodes the [Creature]
+    pub fn nodes(&self) -> &HashMap<Uuid, Node> {
+        &self.nodes
+    }
+
+    /// Returns the unique id of the [Creature]
+    pub fn muscles(&self) -> &HashMap<Uuid, Muscle> {
+        &self.muscles
+    }
+
+    /// Adds a [Node] to the [Creature]
+    pub fn add_node(&mut self, node: Node) {
+        self.nodes.insert(node.id, node);
+    }
+
+    /// Adds a set of [Node]s to the [Creature]
+    pub fn add_nodes(&mut self, nodes: Vec<Node>) {
+        for node in nodes {
+            self.add_node(node);
+        }
+    }
+
+    /// Adds a [Muscle] to the [Creature]
+    pub fn add_muscle(&mut self, muscle: Muscle) {
+        self.muscles.insert(muscle.id, muscle);
+    }
+
+    /// Adds a set of [Node]s to the [Creature]
+    pub fn add_muscles(&mut self, muscles: Vec<Muscle>) {
+        for muscle in muscles {
+            self.add_muscle(muscle);
         }
     }
 }
