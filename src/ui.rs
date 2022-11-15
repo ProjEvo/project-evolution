@@ -12,17 +12,17 @@ pub fn init() {
     eframe::run_native(
         "Project Evolution",
         native_options,
-        Box::new(|cc| Box::new(MyEguiApp::new(cc))),
+        Box::new(|cc| Box::new(App::new(cc))),
     );
 }
 
 #[derive(Default)]
 
 //Creates New EGUI User Interface Struct used to populate objects into new Window
-struct MyEguiApp {}
+struct App {}
 
 //Initializes the New Interface that will create the objects on the screen
-impl MyEguiApp {
+impl App {
     fn new(_cc: &eframe::CreationContext<'_>) -> Self {
         // Customize egui here with cc.egui_ctx.set_fonts and cc.egui_ctx.set_visuals.
         // Restore app state using cc.storage (requires the "persistence" feature).
@@ -32,7 +32,7 @@ impl MyEguiApp {
     }
 }
 
-impl eframe::App for MyEguiApp {
+impl eframe::App for App {
     //Function Updates the screen that is to be blitted (currently very underdeveloped, needs to be fully realized soon)
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         // initializes a central panel of the UI with contents to be added
