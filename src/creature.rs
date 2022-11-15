@@ -119,6 +119,8 @@ mod tests {
 
     #[test]
     pub fn create_creature() {
+        let mut c = Creature::new();
+
         let nodes = Vec::from([
             Node::new(Position::new(1, 2), 3),
             Node::new(Position::new(2, 1), 3),
@@ -130,11 +132,16 @@ mod tests {
         let id3 = nodes.get(2).unwrap().id;
 
         let muscles = Vec::from([Muscle::new(id1, id2), Muscle::new(id2, id3)]);
+        let id4 = muscles.get(0).unwrap().id;
 
-        let c = Creature::new(nodes, muscles);
+        c.add_nodes(nodes);
+        c.add_muscles(muscles);
 
-        assert_eq!(c.nodes.get(0).unwrap().position.x, 1.0);
-        assert_eq!(c.nodes.get(2).unwrap().position.x, 5.0);
-        assert_eq!(c.muscles.get(1).unwrap().to_id, c.nodes.get(2).unwrap().id);
+        assert_eq!(c.nodes().get(&id1).unwrap().position.x, 1.0);
+        assert_eq!(c.nodes().get(&id3).unwrap().position.x, 5.0);
+        assert_eq!(
+            c.muscles().get(&id4).unwrap().to_id,
+            c.nodes.get(&id2).unwrap().id
+        );
     }
 }
