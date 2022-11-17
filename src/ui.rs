@@ -1,7 +1,7 @@
-use crate::creature;
+use crate::creature::{Creature, Muscle, Node, Position};
 /// Manages User Interface (UI)
 use eframe::{egui, epaint::CircleShape};
-use egui::{Color32, Pos2, Shape, Stroke};
+use egui::{Color32, Painter, Pos2, Shape, Stroke};
 
 use crate::res;
 
@@ -21,7 +21,9 @@ pub fn init() {
 #[derive(Default)]
 
 /// Creates new egui ui struct used to populate objects into new Window
-struct App {}
+struct App {
+    creatures: Vec<Creature>,
+}
 
 /// Initializes the new interface that will create the objects on the screen
 impl App {
@@ -34,12 +36,12 @@ impl App {
     }
 }
 fn test_creature() -> (Vec<CircleShape>, Vec<Shape>) {
-    let mut c = creature::Creature::new();
+    let mut c = Creature::new();
 
     let nodes = Vec::from([
-        creature::Node::new(creature::Position::new(300.0, 300.0), 3),
-        creature::Node::new(creature::Position::new(320.0, 220.0), 3),
-        creature::Node::new(creature::Position::new(360.0, 360.0), 3),
+        Node::new(Position::new(300.0, 300.0), 3),
+        Node::new(Position::new(320.0, 220.0), 3),
+        Node::new(Position::new(360.0, 360.0), 3),
     ]);
 
     let id1 = nodes.get(0).unwrap().id;
@@ -47,11 +49,11 @@ fn test_creature() -> (Vec<CircleShape>, Vec<Shape>) {
     let id3 = nodes.get(2).unwrap().id;
 
     let muscles = Vec::from([
-        creature::Muscle::new(id1, id2),
-        creature::Muscle::new(id2, id3),
-        creature::Muscle::new(id3, id1),
+        Muscle::new(id1, id2),
+        Muscle::new(id2, id3),
+        Muscle::new(id3, id1),
     ]);
-    let id4 = muscles.get(0).unwrap().id;
+    let _id4 = muscles.get(0).unwrap().id;
 
     c.add_nodes(nodes);
     c.add_muscles(muscles);
@@ -60,7 +62,7 @@ fn test_creature() -> (Vec<CircleShape>, Vec<Shape>) {
     return (list_nodes, list_muscles);
 }
 
-pub fn get_nodes(c: &creature::Creature) -> Vec<CircleShape> {
+pub fn get_nodes(c: &Creature) -> Vec<CircleShape> {
     let mut list = Vec::new();
     for node in c.nodes() {
         let circle = CircleShape {
@@ -77,7 +79,7 @@ pub fn get_nodes(c: &creature::Creature) -> Vec<CircleShape> {
     return list;
 }
 
-pub fn get_muscle(c: &creature::Creature) -> Vec<Shape> {
+pub fn get_muscle(c: &Creature) -> Vec<Shape> {
     let mut list = Vec::new();
 
     for m in c.muscles() {
@@ -97,26 +99,27 @@ pub fn get_muscle(c: &creature::Creature) -> Vec<Shape> {
     }
     return list;
 }
+
+pub fn paint_creatures(painter: &Painter) {
+    let get_nodes = test_creature().0;
+    let get_muscles = test_creature().1;
+    for muscle in get_muscles {
+        painter.add(muscle);
+    }
+    for node in get_nodes {
+        painter.add(node);
+    }
+}
+
 impl eframe::App for App {
     /// Updates the screen that is to be blitted (currently very underdeveloped, needs to be fully realized soon)
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         // initializes a central panel of the UI with contents to be added
-        let get_nodes = test_creature().0;
-        let get_muscles = test_creature().1;
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.heading("Hello World!");
             ui.label("This is should be a blank UI with a couple of buttons");
-            let button = ui.button("click");
-            let test_creature = creature::Creature::new();
-            for node in get_nodes {
-                ui.painter().add(node);
-            }
-            for muscle in get_muscles {
-                ui.painter().add(muscle);
-            }
-            // ui.painter().circle_filled(egui::Pos2{x: 250.0, y: 250.0}, 30.0, Color32::BLUE);
-            // ui.painter().hline( 280.0..=300.0,251.0, Stroke::new(5.0,Color32::RED));
-            // ui.painter().circle_filled(egui::Pos2{x: 330.0, y: 250.0}, 30.0, Color32::BLUE);
+
+            paint_creatures(ui.painter());
         });
     }
 }
