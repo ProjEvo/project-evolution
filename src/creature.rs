@@ -1,8 +1,19 @@
 //! Contains the [Creature] struct and all related components of it
 
-use std::collections::HashMap;
+use std::{collections::HashMap, ops::RangeInclusive};
 
+use rand::Rng;
 use uuid::{self, Uuid};
+
+pub const MAX_WORLD_X: f32 = 100.0;
+pub const MAX_WORLD_Y: f32 = 56.0;
+
+const BASE_RANDOM_NODES: i32 = 3;
+const RANDOM_CHANCE_TO_ADD_NODE: f32 = 0.25;
+const RANDOM_NODE_X_POSITION_RANGE: RangeInclusive<f32> = -10.0..=10.0;
+const RANDOM_NODE_Y_POSITION_RANGE: RangeInclusive<f32> = -10.0..=10.0;
+const RANDOM_NODE_SIZE_RANGE: RangeInclusive<f32> = 1.0..=2.5;
+const RANDOM_CHANGE_TO_CONNECT_NODES: f32 = 0.75;
 
 /// A creature, made up of [Node]s and [Muscle]s. Contains a unique id for reference.
 pub struct Creature {
@@ -21,19 +32,76 @@ impl Creature {
         }
     }
 
+    /// Creates a new random creature
+    pub fn random() -> Creature {
+        let mut rng = rand::thread_rng();
+
+        let mut creature = Self::new();
+
+        let mut number_of_nodes = BASE_RANDOM_NODES;
+
+        while rng.gen::<f32>() < RANDOM_CHANCE_TO_ADD_NODE {
+            number_of_nodes += 1;
+        }
+
+        for _ in 0..number_of_nodes {
+            let position = Position::new(
+                rng.gen_range(RANDOM_NODE_X_POSITION_RANGE),
+                rng.gen_range(RANDOM_NODE_Y_POSITION_RANGE),
+            );
+
+            let size = rng.gen_range(RANDOM_NODE_SIZE_RANGE);
+
+            creature.add_node(Node::new(position, size))
+        }
+
+        let mut tested: HashMap<(Uuid, Uuid), bool> = HashMap::new();
+        let mut muscles = Vec::new();
+
+        for from in creature.nodes().values() {
+            for to in creature.nodes().values() {
+                if from.id == to.id || tested.contains_key(&(to.id, from.id)) {
+                    continue;
+                }
+
+                if rng.gen::<f32>() >= RANDOM_CHANGE_TO_CONNECT_NODES {
+                    continue;
+                }
+
+                tested.insert((from.id, to.id), true);
+
+                muscles.push(Muscle::new(from.id, to.id));
+            }
+        }
+
+        creature.add_muscles(muscles);
+
+        creature
+    }
+
     /// Returns the unique id of the [Creature]
     pub fn id(&self) -> &Uuid {
         &self.id
     }
 
-    /// Returns the nodes the [Creature]
+    /// Returns the nodes of the [Creature]
     pub fn nodes(&self) -> &HashMap<Uuid, Node> {
         &self.nodes
+    }
+
+    /// Returns the nodes of the [Creature], mutably
+    pub fn nodes_mut(&mut self) -> &mut HashMap<Uuid, Node> {
+        &mut self.nodes
     }
 
     /// Returns the unique id of the [Creature]
     pub fn muscles(&self) -> &HashMap<Uuid, Muscle> {
         &self.muscles
+    }
+
+    /// Returns the unique id of the [Creature]
+    pub fn muscles_mut(&mut self) -> &mut HashMap<Uuid, Muscle> {
+        &mut self.muscles
     }
 
     /// Adds a [Node] to the [Creature]
@@ -58,6 +126,33 @@ impl Creature {
         for muscle in muscles {
             self.add_muscle(muscle);
         }
+    }
+
+    /// Translates a creature x to the right and y down
+    pub fn translate(&mut self, x: f32, y: f32) {
+        for node in self.nodes_mut().values_mut() {
+            node.position.x += x;
+            node.position.y += y;
+        }
+    }
+
+    /// Computes a creatures center and translates it to be centered around that position
+    pub fn translate_center_to(&mut self, position: Position) {
+        let mut total_nodes: f32 = 0.0;
+        let mut x_sum: f32 = 0.0;
+        let mut y_sum: f32 = 0.0;
+
+        for node in self.nodes().values() {
+            total_nodes += 1.0;
+
+            x_sum += node.position.x;
+            y_sum += node.position.y;
+        }
+
+        let translate_x = position.x - (x_sum / total_nodes);
+        let translate_y = position.y - (y_sum / total_nodes);
+
+        self.translate(translate_x, translate_y);
     }
 }
 
