@@ -65,12 +65,12 @@ impl Creature {
 pub struct Node {
     pub id: Uuid,
     pub position: Position,
-    pub size: f64,
+    pub size: f32,
 }
 
 impl Node {
     /// Creates a new node at a [Position] with a certain size
-    pub fn new<N: Into<f64>>(position: Position, size: N) -> Node {
+    pub fn new<N: Into<f32>>(position: Position, size: N) -> Node {
         Node {
             id: Uuid::new_v4(),
             position,
