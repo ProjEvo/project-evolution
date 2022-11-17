@@ -1,12 +1,9 @@
-
 use crate::creature;
 /// Manages User Interface (UI)
 use eframe::{egui, epaint::CircleShape};
-use egui::{Color32, Stroke, Pos2, Shape};
+use egui::{Color32, Pos2, Shape, Stroke};
 
 use crate::res;
-
-
 
 pub fn init() {
     let native_options = eframe::NativeOptions {
@@ -36,7 +33,7 @@ impl App {
         Self::default()
     }
 }
-fn test_creature()-> (Vec<CircleShape>, Vec<Shape>) {
+fn test_creature() -> (Vec<CircleShape>, Vec<Shape>) {
     let mut c = creature::Creature::new();
 
     let nodes = Vec::from([
@@ -49,7 +46,11 @@ fn test_creature()-> (Vec<CircleShape>, Vec<Shape>) {
     let id2 = nodes.get(1).unwrap().id;
     let id3 = nodes.get(2).unwrap().id;
 
-    let muscles = Vec::from([ creature::Muscle::new(id1, id2),  creature::Muscle::new(id2, id3),  creature::Muscle::new(id3, id1)]);
+    let muscles = Vec::from([
+        creature::Muscle::new(id1, id2),
+        creature::Muscle::new(id2, id3),
+        creature::Muscle::new(id3, id1),
+    ]);
     let id4 = muscles.get(0).unwrap().id;
 
     c.add_nodes(nodes);
@@ -62,7 +63,15 @@ fn test_creature()-> (Vec<CircleShape>, Vec<Shape>) {
 pub fn get_nodes(c: &creature::Creature) -> Vec<CircleShape> {
     let mut list = Vec::new();
     for node in c.nodes() {
-        let  circle = CircleShape{center: egui::Pos2 { x: node.1.position.x as f32, y: node.1.position.y as f32}, radius: 10.0, fill: Color32::BLUE, stroke: Stroke::default()};
+        let circle = CircleShape {
+            center: egui::Pos2 {
+                x: node.1.position.x as f32,
+                y: node.1.position.y as f32,
+            },
+            radius: 10.0,
+            fill: Color32::BLUE,
+            stroke: Stroke::default(),
+        };
         list.push(circle);
     }
     return list;
@@ -70,14 +79,20 @@ pub fn get_nodes(c: &creature::Creature) -> Vec<CircleShape> {
 
 pub fn get_muscle(c: &creature::Creature) -> Vec<Shape> {
     let mut list = Vec::new();
-    
+
     for m in c.muscles() {
-        let  from_node = c.nodes().get(&m.1.from_id).unwrap();
+        let from_node = c.nodes().get(&m.1.from_id).unwrap();
         let to_node = c.nodes().get(&m.1.to_id).unwrap();
         let mut list_points = Vec::new();
-        list_points.push(Pos2{x:from_node.position.x as f32, y: from_node.position.y as f32});
-        list_points.push(Pos2{x:to_node.position.x as f32, y: to_node.position.y as f32});
-        let line = egui::Shape::line(list_points,Stroke::from((2.5, Color32::RED)));
+        list_points.push(Pos2 {
+            x: from_node.position.x as f32,
+            y: from_node.position.y as f32,
+        });
+        list_points.push(Pos2 {
+            x: to_node.position.x as f32,
+            y: to_node.position.y as f32,
+        });
+        let line = egui::Shape::line(list_points, Stroke::from((2.5, Color32::RED)));
         list.push(line);
     }
     return list;
@@ -93,7 +108,7 @@ impl eframe::App for App {
             ui.label("This is should be a blank UI with a couple of buttons");
             let button = ui.button("click");
             let test_creature = creature::Creature::new();
-            for node  in get_nodes {
+            for node in get_nodes {
                 ui.painter().add(node);
             }
             for muscle in get_muscles {
@@ -102,9 +117,6 @@ impl eframe::App for App {
             // ui.painter().circle_filled(egui::Pos2{x: 250.0, y: 250.0}, 30.0, Color32::BLUE);
             // ui.painter().hline( 280.0..=300.0,251.0, Stroke::new(5.0,Color32::RED));
             // ui.painter().circle_filled(egui::Pos2{x: 330.0, y: 250.0}, 30.0, Color32::BLUE);
-            
         });
     }
-    
 }
-
