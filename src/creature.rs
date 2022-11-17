@@ -122,9 +122,9 @@ mod tests {
         let mut c = Creature::new();
 
         let nodes = Vec::from([
-            Node::new(Position::new(1.0, 2.0), 3),
-            Node::new(Position::new(2.0, 1.0), 3),
-            Node::new(Position::new(5.0, 5.0), 3),
+            Node::new(Position::new(1.0, 2.0), 3.0),
+            Node::new(Position::new(2.0, 1.0), 3.0),
+            Node::new(Position::new(5.0, 5.0), 3.0),
         ]);
 
         let id1 = nodes.get(0).unwrap().id;

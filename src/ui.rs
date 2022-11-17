@@ -39,9 +39,9 @@ fn test_creature() -> (Vec<CircleShape>, Vec<Shape>) {
     let mut c = Creature::new();
 
     let nodes = Vec::from([
-        Node::new(Position::new(300.0, 300.0), 3),
-        Node::new(Position::new(320.0, 220.0), 3),
-        Node::new(Position::new(360.0, 360.0), 3),
+        Node::new(Position::new(300.0, 300.0), 3.0),
+        Node::new(Position::new(320.0, 220.0), 3.0),
+        Node::new(Position::new(360.0, 360.0), 3.0),
     ]);
 
     let id1 = nodes.get(0).unwrap().id;
@@ -67,8 +67,8 @@ pub fn get_nodes(c: &Creature) -> Vec<CircleShape> {
     for node in c.nodes() {
         let circle = CircleShape {
             center: egui::Pos2 {
-                x: node.1.position.x as f32,
-                y: node.1.position.y as f32,
+                x: node.1.position.x,
+                y: node.1.position.y,
             },
             radius: 10.0,
             fill: Color32::BLUE,
