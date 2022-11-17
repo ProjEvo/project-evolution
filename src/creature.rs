@@ -99,13 +99,13 @@ impl Muscle {
 
 /// A position in the 2D plane represented by an x and a y
 pub struct Position {
-    pub x: f64,
-    pub y: f64,
+    pub x: f32,
+    pub y: f32,
 }
 
 impl Position {
     /// Creates a new position at (x, y)
-    pub fn new<N: Into<f64>>(x: N, y: N) -> Position {
+    pub fn new<N: Into<f32>>(x: N, y: N) -> Position {
         Position {
             x: x.into(),
             y: y.into(),
@@ -122,9 +122,9 @@ mod tests {
         let mut c = Creature::new();
 
         let nodes = Vec::from([
-            Node::new(Position::new(1, 2), 3),
-            Node::new(Position::new(2, 1), 3),
-            Node::new(Position::new(5, 5), 3),
+            Node::new(Position::new(1.0, 2.0), 3),
+            Node::new(Position::new(2.0, 1.0), 3),
+            Node::new(Position::new(5.0, 5.0), 3),
         ]);
 
         let id1 = nodes.get(0).unwrap().id;
