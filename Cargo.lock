@@ -1404,6 +1404,7 @@ dependencies = [
  "eframe",
  "egui",
  "image",
+ "rand",
  "uuid",
 ]
 
