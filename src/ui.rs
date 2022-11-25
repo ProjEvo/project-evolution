@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use crate::{
     creature::{Creature, Position},
-    simulator::{MAX_WORLD_X, MAX_WORLD_Y},
+    simulator::{Simulation, MAX_WORLD_X, MAX_WORLD_Y},
 };
 /// Manages User Interface (UI)
 use eframe::{egui, epaint::CircleShape, Theme};
@@ -27,7 +27,10 @@ pub fn init() {
     );
 }
 
-fn transform_position_from_world_to_pos2(position: &Position, available_size: Vec2) -> Pos2 {
+fn transform_position_from_world_to_pos2(
+    position: &rapier::prelude::Vector<f32>,
+    available_size: Vec2,
+) -> Pos2 {
     let x_factor = available_size.x / MAX_WORLD_X;
     let y_factor = available_size.y / MAX_WORLD_Y;
 
@@ -43,48 +46,37 @@ fn transform_n_from_world_to_pos2(n: f32, available_size: Vec2) -> f32 {
     n * x_factor
 }
 
-fn paint_creature_muscles(creature: &Creature, painter: &Painter, available_size: Vec2) {
-    for muscle in creature.muscles().values() {
-        let from_node = creature.nodes().get(&muscle.from_id).unwrap();
-        let to_node = creature.nodes().get(&muscle.to_id).unwrap();
+fn paint_simulation(simulation: &Simulation, painter: &Painter, available_size: Vec2) {
+    for (_, body) in simulation.rigid_body_set().iter() {
+        for collider_handle in body.colliders() {
+            let collider = simulation
+                .collider_set()
+                .get(collider_handle.clone())
+                .unwrap();
 
-        let from_point = transform_position_from_world_to_pos2(&from_node.position, available_size);
-        let to_point = transform_position_from_world_to_pos2(&to_node.position, available_size);
-        let points = vec![from_point, to_point];
+            let as_ball = collider.shape().as_ball();
 
-        let line = egui::Shape::line(
-            points,
-            Stroke::from((
-                transform_n_from_world_to_pos2(0.5, available_size),
-                Color32::RED,
-            )),
-        );
+            if let None = as_ball {
+                continue;
+            }
 
-        painter.add(line);
+            let as_ball = as_ball.unwrap();
+
+            let circle = CircleShape {
+                center: transform_position_from_world_to_pos2(body.translation(), available_size),
+                radius: transform_n_from_world_to_pos2(as_ball.radius, available_size),
+                fill: Color32::BLUE,
+                stroke: Stroke::default(),
+            };
+
+            painter.add(circle);
+        }
     }
 }
 
-fn paint_creature_nodes(creature: &Creature, painter: &Painter, available_size: Vec2) {
-    for node in creature.nodes().values() {
-        let circle = CircleShape {
-            center: transform_position_from_world_to_pos2(&node.position, available_size),
-            radius: transform_n_from_world_to_pos2(node.size / 2.0, available_size),
-            fill: Color32::BLUE,
-            stroke: Stroke::default(),
-        };
-
-        painter.add(circle);
-    }
-}
-
-fn paint_creature(creature: &Creature, painter: &Painter, available_size: Vec2) {
-    paint_creature_muscles(creature, painter, available_size);
-    paint_creature_nodes(creature, painter, available_size);
-}
-
-fn paint_creatures(creatures: &Vec<Creature>, painter: &Painter, available_size: Vec2) {
-    for creature in creatures {
-        paint_creature(creature, painter, available_size)
+fn paint_simulations(simulations: &Vec<Simulation>, painter: &Painter, available_size: Vec2) {
+    for simulation in simulations {
+        paint_simulation(simulation, painter, available_size)
     }
 }
 
@@ -92,7 +84,8 @@ fn paint_creatures(creatures: &Vec<Creature>, painter: &Painter, available_size:
 
 /// Creates new egui ui struct used to populate objects into new Window
 struct App {
-    creatures: Vec<Creature>,
+    simulations: Vec<Simulation>,
+    paused: bool,
 }
 
 /// Initializes the new interface that will create the objects on the screen
@@ -102,18 +95,21 @@ impl App {
         // Restore app state using cc.storage (requires the "persistence" feature).
         // Use the cc.gl (a glow::Context) to create graphics shaders and buffers that you can use
         // for e.g. egui::PaintCallback.
-        Self::default()
+        App {
+            paused: true,
+            ..Default::default()
+        }
     }
 
     /// Renders the scene
     fn render(&self, painter: &Painter, available_size: Vec2) {
-        paint_creatures(&self.creatures, painter, available_size)
+        paint_simulations(&self.simulations, painter, available_size);
     }
 
-    // Generic test function to translate all the creatures to the right
-    fn translate_all(&mut self) {
-        for creature in self.creatures.iter_mut() {
-            creature.translate(5.0, 0.0)
+    // Generic test function to step all simulations
+    fn step_all(&mut self) {
+        for simulation in self.simulations.iter_mut() {
+            simulation.step();
         }
     }
 }
@@ -146,11 +142,24 @@ impl eframe::App for App {
                     creature
                         .translate_center_to(Position::new(MAX_WORLD_X / 2.0, MAX_WORLD_Y / 2.0));
 
-                    self.creatures.push(creature);
+                    let mut simulation = Simulation::new();
+
+                    simulation.add_creature(&creature);
+
+                    self.simulations.push(simulation);
                 }
 
-                if ui.button("Translate All").clicked() {
-                    self.translate_all();
+                let play_button_text = match self.paused {
+                    true => "Play",
+                    false => "Pause",
+                };
+
+                if ui.button(play_button_text).clicked() {
+                    self.paused = !self.paused
+                }
+
+                if !self.paused {
+                    self.step_all();
                 }
 
                 self.render(ui.painter(), total_size);
