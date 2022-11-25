@@ -1,6 +1,9 @@
 use std::time::Duration;
 
-use crate::creature::{Creature, Position, MAX_WORLD_X, MAX_WORLD_Y};
+use crate::{
+    creature::{Creature, Position},
+    simulator::{MAX_WORLD_X, MAX_WORLD_Y},
+};
 /// Manages User Interface (UI)
 use eframe::{egui, epaint::CircleShape, Theme};
 use egui::{Color32, Painter, Pos2, Stroke, Vec2};

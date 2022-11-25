@@ -5,9 +5,6 @@ use std::{collections::HashMap, ops::RangeInclusive};
 use rand::Rng;
 use uuid::{self, Uuid};
 
-pub const MAX_WORLD_X: f32 = 100.0;
-pub const MAX_WORLD_Y: f32 = 56.0;
-
 const BASE_RANDOM_NODES: i32 = 3;
 const RANDOM_CHANCE_TO_ADD_NODE: f32 = 0.25;
 const RANDOM_NODE_X_POSITION_RANGE: RangeInclusive<f32> = -10.0..=10.0;
