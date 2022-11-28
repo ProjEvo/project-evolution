@@ -47,7 +47,27 @@ fn transform_n_from_world_to_pos2(n: f32, available_size: Vec2) -> f32 {
 }
 
 fn paint_simulation(simulation: &Simulation, painter: &Painter, available_size: Vec2) {
-    for (_, body) in simulation.rigid_body_set().iter() {
+    let rigid_body_set = simulation.rigid_body_set();
+    let impulse_joint_set = simulation.impulse_joint_set();
+
+    for (_, joint) in impulse_joint_set.iter() {
+        let body1_position = rigid_body_set.get(joint.body1).unwrap().translation();
+        let body2_position = rigid_body_set.get(joint.body2).unwrap().translation();
+        let point1 = transform_position_from_world_to_pos2(body1_position, available_size);
+        let point2 = transform_position_from_world_to_pos2(body2_position, available_size);
+
+        let line = egui::Shape::line(
+            vec![point1, point2],
+            Stroke::from((
+                transform_n_from_world_to_pos2(0.5, available_size),
+                Color32::RED,
+            )),
+        );
+
+        painter.add(line);
+    }
+
+    for (_, body) in rigid_body_set.iter() {
         for collider_handle in body.colliders() {
             let collider = simulation
                 .collider_set()

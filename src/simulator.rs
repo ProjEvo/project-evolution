@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use rapier::prelude::*;
 
 use crate::creature::Creature;
@@ -24,8 +26,8 @@ impl Simulation {
             narrow_phase: NarrowPhase::new(),
             rigid_body_set: RigidBodySet::new(),
             collider_set: ColliderSet::new(),
-            impulse_joints: ImpulseJointSet::new(),
-            multibody_joints: MultibodyJointSet::new(),
+            impulse_joint_set: ImpulseJointSet::new(),
+            multibody_joints_set: MultibodyJointSet::new(),
             ccd_solver: CCDSolver::new(),
         };
 
@@ -55,23 +57,52 @@ impl Simulation {
         &self.physics_pipeline_parameters.collider_set
     }
 
+    pub fn impulse_joint_set(&self) -> &ImpulseJointSet {
+        &self.physics_pipeline_parameters.impulse_joint_set
+    }
+
     pub fn add_creature(&mut self, creature: &Creature) {
         let physics_pipeline_parameters = &mut self.physics_pipeline_parameters;
         let rigid_body_set = &mut physics_pipeline_parameters.rigid_body_set;
         let collider_set = &mut physics_pipeline_parameters.collider_set;
+        let impulse_joint_set = &mut physics_pipeline_parameters.impulse_joint_set;
+        let nodes = creature.nodes();
+        let muscles = creature.muscles();
 
-        for node in creature.nodes().values() {
+        let mut node_id_to_body_handles = HashMap::new();
+
+        // Add node rigid bodies
+        for node in nodes.values() {
             let body = RigidBodyBuilder::dynamic()
                 .translation(vector![node.position.x, node.position.y])
                 .build();
 
             let body_handle = rigid_body_set.insert(body);
+            node_id_to_body_handles.insert(node.id, body_handle);
 
             let collider = ColliderBuilder::ball(node.size / 2.0)
                 .restitution(0.7)
                 .build();
 
             collider_set.insert_with_parent(collider, body_handle, rigid_body_set);
+        }
+
+        // Add muscle joints
+        for muscle in muscles.values() {
+            let from_node_position = &nodes.get(&muscle.from_id).unwrap().position;
+            let to_node_position = &nodes.get(&muscle.to_id).unwrap().position;
+            let from_node_body_handle = node_id_to_body_handles.get(&muscle.from_id).unwrap();
+            let to_node_body_handle = node_id_to_body_handles.get(&muscle.to_id).unwrap();
+
+            let joint = FixedJointBuilder::new()
+                .local_anchor1(point![
+                    to_node_position.x - from_node_position.x,
+                    to_node_position.y - from_node_position.y
+                ])
+                .local_anchor2(point![0.0, 0.0])
+                .build();
+
+            impulse_joint_set.insert(*from_node_body_handle, *to_node_body_handle, joint, true);
         }
     }
 
@@ -89,8 +120,8 @@ impl Simulation {
             &mut params.narrow_phase,
             &mut params.rigid_body_set,
             &mut params.collider_set,
-            &mut params.impulse_joints,
-            &mut params.multibody_joints,
+            &mut params.impulse_joint_set,
+            &mut params.multibody_joints_set,
             &mut params.ccd_solver,
             &physics_hooks,
             &events_handler,
@@ -106,7 +137,7 @@ struct PhysicsPipelineParameters {
     narrow_phase: NarrowPhase,
     rigid_body_set: RigidBodySet,
     collider_set: ColliderSet,
-    impulse_joints: ImpulseJointSet,
-    multibody_joints: MultibodyJointSet,
+    impulse_joint_set: ImpulseJointSet,
+    multibody_joints_set: MultibodyJointSet,
     ccd_solver: CCDSolver,
 }
