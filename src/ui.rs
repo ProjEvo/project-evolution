@@ -156,7 +156,7 @@ impl eframe::App for App {
                 ui.heading("Hello World!");
                 ui.label("This is should be a blank UI with a couple of buttons");
 
-                if ui.button("Add Creature").clicked() {
+                if ui.button("Add Simulation").clicked() {
                     let mut creature = Creature::random();
 
                     creature
@@ -167,6 +167,10 @@ impl eframe::App for App {
                     simulation.add_creature(&creature);
 
                     self.simulations.push(simulation);
+                }
+
+                if ui.button("Remove Simulations").clicked() {
+                    self.simulations.clear();
                 }
 
                 let play_button_text = match self.paused {
