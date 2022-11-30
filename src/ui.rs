@@ -69,14 +69,11 @@ fn paint_simulation(simulation: &Simulation, painter: &Painter, available_size: 
 
     for (_, body) in rigid_body_set.iter() {
         for collider_handle in body.colliders() {
-            let collider = simulation
-                .collider_set()
-                .get(collider_handle.clone())
-                .unwrap();
+            let collider = simulation.collider_set().get(*collider_handle).unwrap();
 
             let as_ball = collider.shape().as_ball();
 
-            if let None = as_ball {
+            if as_ball.is_none() {
                 continue;
             }
 
