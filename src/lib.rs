@@ -2,6 +2,7 @@
 
 pub mod creature;
 pub mod res;
+pub mod simulator;
 pub mod ui;
 
 #[cfg(test)]
