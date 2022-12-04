@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use crate::{
-    creature::{Creature, Position},
+    creature::{CreatureBuilder, Position},
     simulator::{Simulation, MAX_WORLD_X, MAX_WORLD_Y},
 };
 /// Manages User Interface (UI)
@@ -154,10 +154,9 @@ impl eframe::App for App {
                 ui.label("This is should be a blank UI with a couple of buttons");
 
                 if ui.button("Add Simulation").clicked() {
-                    let mut creature = Creature::random();
-
-                    creature
-                        .translate_center_to(Position::new(MAX_WORLD_X / 2.0, MAX_WORLD_Y / 2.0));
+                    let creature = CreatureBuilder::random()
+                        .translate_center_to(Position::new(MAX_WORLD_X / 2.0, MAX_WORLD_Y / 2.0))
+                        .build();
 
                     let mut simulation = Simulation::new();
 
