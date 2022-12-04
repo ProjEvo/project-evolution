@@ -158,7 +158,7 @@ impl CreatureBuilder {
 
         for (id, muscle) in &self.muscles {
             let from = &self.nodes.get(&muscle.from_id).unwrap().position;
-            let to = &self.nodes.get(&muscle.from_id).unwrap().position;
+            let to = &self.nodes.get(&muscle.to_id).unwrap().position;
             muscle_lengths.insert(*id, from.distance_to(to));
         }
 

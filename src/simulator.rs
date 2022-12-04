@@ -13,10 +13,13 @@ const GRAVITY: f32 = 10.0;
 pub struct Simulation {
     physics_pipeline: PhysicsPipeline,
     physics_pipeline_parameters: PhysicsPipelineParameters,
+    joint_lengths: HashMap<ImpulseJointHandle, f32>,
+    counter: f32,
+    decreasing: bool,
 }
 
 impl Simulation {
-    pub fn new() -> Simulation {
+    pub fn new(creature: Creature) -> Simulation {
         // Initialize pipeline params
         let mut physics_pipeline_parameters = PhysicsPipelineParameters {
             gravity: vector![0.0, GRAVITY],
@@ -30,44 +33,21 @@ impl Simulation {
             multibody_joints_set: MultibodyJointSet::new(),
             ccd_solver: CCDSolver::new(),
         };
+        let rigid_body_set = &mut physics_pipeline_parameters.rigid_body_set;
+        let collider_set = &mut physics_pipeline_parameters.collider_set;
+        let impulse_joint_set = &mut physics_pipeline_parameters.impulse_joint_set;
 
         // Add floor
         let floor_collider = ColliderBuilder::cuboid(f32::MAX, FLOOR_HEIGHT)
             .translation(vector![0.0, FLOOR_TOP_Y + (FLOOR_HEIGHT / 2.0)])
             .build();
 
-        physics_pipeline_parameters
-            .collider_set
-            .insert(floor_collider);
+        collider_set.insert(floor_collider);
 
-        // Build simulation
-        let physics_pipeline = PhysicsPipeline::new();
-
-        Simulation {
-            physics_pipeline,
-            physics_pipeline_parameters,
-        }
-    }
-
-    pub fn rigid_body_set(&self) -> &RigidBodySet {
-        &self.physics_pipeline_parameters.rigid_body_set
-    }
-
-    pub fn collider_set(&self) -> &ColliderSet {
-        &self.physics_pipeline_parameters.collider_set
-    }
-
-    pub fn impulse_joint_set(&self) -> &ImpulseJointSet {
-        &self.physics_pipeline_parameters.impulse_joint_set
-    }
-
-    pub fn add_creature(&mut self, creature: &Creature) {
-        let physics_pipeline_parameters = &mut self.physics_pipeline_parameters;
-        let rigid_body_set = &mut physics_pipeline_parameters.rigid_body_set;
-        let collider_set = &mut physics_pipeline_parameters.collider_set;
-        let impulse_joint_set = &mut physics_pipeline_parameters.impulse_joint_set;
+        // Add creature
         let nodes = creature.nodes();
         let muscles = creature.muscles();
+        let muscle_lengths = creature.muscle_lengths();
 
         let mut node_id_to_body_handles = HashMap::new();
 
@@ -88,25 +68,85 @@ impl Simulation {
         }
 
         // Add muscle joints
-        for muscle in muscles.values() {
+        let mut joint_lengths = HashMap::new();
+
+        for (id, muscle) in muscles {
             let from_node_position = &nodes.get(&muscle.from_id).unwrap().position;
             let to_node_position = &nodes.get(&muscle.to_id).unwrap().position;
             let from_node_body_handle = node_id_to_body_handles.get(&muscle.from_id).unwrap();
             let to_node_body_handle = node_id_to_body_handles.get(&muscle.to_id).unwrap();
 
-            let joint = FixedJointBuilder::new()
-                .local_anchor1(point![
-                    to_node_position.x - from_node_position.x,
-                    to_node_position.y - from_node_position.y
-                ])
-                .local_anchor2(point![0.0, 0.0])
-                .build();
+            let offset = point![
+                to_node_position.x - from_node_position.x,
+                to_node_position.y - from_node_position.y
+            ];
 
-            impulse_joint_set.insert(*from_node_body_handle, *to_node_body_handle, joint, true);
+            let joint =
+                PrismaticJointBuilder::new(UnitVector::new_normalize(vector![offset.x, offset.y]))
+                    .local_anchor1(offset)
+                    .local_anchor2(point![0.0, 0.0])
+                    .set_motor(0.0, 0.0, 0.0, 0.0)
+                    .build();
+
+            let joint_handle =
+                impulse_joint_set.insert(*from_node_body_handle, *to_node_body_handle, joint, true);
+
+            joint_lengths.insert(joint_handle, muscle_lengths[id]);
+        }
+
+        // Build simulation
+        let physics_pipeline = PhysicsPipeline::new();
+
+        Simulation {
+            physics_pipeline,
+            physics_pipeline_parameters,
+            joint_lengths,
+            counter: 0.0,
+            decreasing: true,
+        }
+    }
+
+    pub fn rigid_body_set(&self) -> &RigidBodySet {
+        &self.physics_pipeline_parameters.rigid_body_set
+    }
+
+    pub fn collider_set(&self) -> &ColliderSet {
+        &self.physics_pipeline_parameters.collider_set
+    }
+
+    pub fn impulse_joint_set(&self) -> &ImpulseJointSet {
+        &self.physics_pipeline_parameters.impulse_joint_set
+    }
+
+    fn step_muscles(&mut self) {
+        let params = &mut self.physics_pipeline_parameters;
+
+        if self.decreasing {
+            self.counter -= 0.01;
+            if self.counter < -0.5 {
+                self.counter = -0.5;
+                self.decreasing = false;
+            }
+        } else {
+            self.counter += 0.01;
+            if self.counter > 0.5 {
+                self.counter = 0.5;
+                self.decreasing = true;
+            }
+        }
+
+        for (handle, joint) in params.impulse_joint_set.iter_mut() {
+            if self.joint_lengths.contains_key(&handle) {
+                let joint_length = self.joint_lengths[&handle];
+                let motor = joint.data.as_prismatic_mut().unwrap();
+                motor.set_motor(self.counter * joint_length, 0.1, 50000.0, 0.5);
+            }
         }
     }
 
     pub fn step(&mut self) {
+        self.step_muscles();
+
         let params = &mut self.physics_pipeline_parameters;
 
         let physics_hooks = ();
