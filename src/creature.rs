@@ -262,4 +262,16 @@ mod tests {
             c.nodes.get(&id2).unwrap().id
         );
     }
+
+    #[test]
+    pub fn position_distance() {
+        let pos1 = Position::new(5.0, 3.0);
+        let pos2 = Position::new(0.0, 3.0);
+        let pos3 = Position::new(5.0, 0.0);
+        let pos4 = Position::new(3.0, 5.0);
+
+        assert_eq!(pos1.distance_to(&pos2), 5.0);
+        assert_eq!(pos1.distance_to(&pos3), 3.0);
+        assert_eq!(pos1.distance_to(&pos4), f32::sqrt(8.0));
+    }
 }
