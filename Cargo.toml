@@ -13,3 +13,6 @@ eframe = "0.19.0"
 image = "0.24.5"
 rand = "0.8.5"
 rapier = {package = "rapier2d", version = "0.16.1"}
+
+[profile.dev.package.rapier2d]
+opt-level = 3

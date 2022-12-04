@@ -158,11 +158,7 @@ impl eframe::App for App {
                         .translate_center_to(Position::new(MAX_WORLD_X / 2.0, MAX_WORLD_Y / 2.0))
                         .build();
 
-                    let mut simulation = Simulation::new();
-
-                    simulation.add_creature(&creature);
-
-                    self.simulations.push(simulation);
+                    self.simulations.push(Simulation::new(creature));
                 }
 
                 if ui.button("Remove Simulations").clicked() {

@@ -158,7 +158,7 @@ impl CreatureBuilder {
 
         for (id, muscle) in &self.muscles {
             let from = &self.nodes.get(&muscle.from_id).unwrap().position;
-            let to = &self.nodes.get(&muscle.from_id).unwrap().position;
+            let to = &self.nodes.get(&muscle.to_id).unwrap().position;
             muscle_lengths.insert(*id, from.distance_to(to));
         }
 
@@ -261,5 +261,17 @@ mod tests {
             c.muscles().get(&id4).unwrap().to_id,
             c.nodes.get(&id2).unwrap().id
         );
+    }
+
+    #[test]
+    pub fn position_distance() {
+        let pos1 = Position::new(5.0, 3.0);
+        let pos2 = Position::new(0.0, 3.0);
+        let pos3 = Position::new(5.0, 0.0);
+        let pos4 = Position::new(3.0, 5.0);
+
+        assert_eq!(pos1.distance_to(&pos2), 5.0);
+        assert_eq!(pos1.distance_to(&pos3), 3.0);
+        assert_eq!(pos1.distance_to(&pos4), f32::sqrt(8.0));
     }
 }
