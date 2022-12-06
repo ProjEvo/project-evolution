@@ -1,15 +1,17 @@
+//! Manages the UI
+
 use std::time::Duration;
 
 use crate::{
     creature::{CreatureBuilder, Position},
     simulator::{Simulation, MAX_WORLD_X, MAX_WORLD_Y},
 };
-/// Manages User Interface (UI)
 use eframe::{egui, epaint::CircleShape, Theme};
 use egui::{Color32, Painter, Pos2, Stroke, Vec2};
 
 use crate::res;
 
+/// Initializes the UI
 pub fn init() {
     let native_options = eframe::NativeOptions {
         icon_data: Some(res::load_icon_data()),
@@ -27,6 +29,7 @@ pub fn init() {
     );
 }
 
+/// Utility method to convert physics coordinates to where they should be on the screen
 fn transform_position_from_world_to_pos2(
     position: &rapier::prelude::Vector<f32>,
     available_size: Vec2,
@@ -40,12 +43,14 @@ fn transform_position_from_world_to_pos2(
     }
 }
 
+/// Utility method to convert physics scalars to where they should be on the screen
 fn transform_n_from_world_to_pos2(n: f32, available_size: Vec2) -> f32 {
     let x_factor = available_size.x / MAX_WORLD_X;
 
     n * x_factor
 }
 
+/// Paints a [Simulation] using the provided [Painter]
 fn paint_simulation(simulation: &Simulation, painter: &Painter, available_size: Vec2) {
     let rigid_body_set = simulation.rigid_body_set();
     let impulse_joint_set = simulation.impulse_joint_set();
@@ -91,6 +96,7 @@ fn paint_simulation(simulation: &Simulation, painter: &Painter, available_size: 
     }
 }
 
+/// Paints a vec of [Simulation]s using the provided [Painter]
 fn paint_simulations(simulations: &Vec<Simulation>, painter: &Painter, available_size: Vec2) {
     for simulation in simulations {
         paint_simulation(simulation, painter, available_size)
@@ -105,8 +111,8 @@ struct App {
     paused: bool,
 }
 
-/// Initializes the new interface that will create the objects on the screen
 impl App {
+    /// Initializes the egui app
     fn new(_cc: &eframe::CreationContext<'_>) -> Self {
         // Customize egui here with cc.egui_ctx.set_fonts and cc.egui_ctx.set_visuals.
         // Restore app state using cc.storage (requires the "persistence" feature).
@@ -123,7 +129,7 @@ impl App {
         paint_simulations(&self.simulations, painter, available_size);
     }
 
-    // Generic test function to step all simulations
+    // Steps all simulations
     fn step_all(&mut self) {
         for simulation in self.simulations.iter_mut() {
             simulation.step();
@@ -132,7 +138,7 @@ impl App {
 }
 
 impl eframe::App for App {
-    /// Updates the screen that is to be blitted (currently very underdeveloped, needs to be fully realized soon)
+    /// Called every frame to update the screen
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         let custom_frame = egui::containers::Frame {
             inner_margin: egui::style::Margin {
@@ -181,6 +187,7 @@ impl eframe::App for App {
                 self.render(ui.painter(), total_size);
             });
 
+        // Logic to continuously re-render the UI
         ctx.request_repaint_after(Duration::from_millis(16))
     }
 }

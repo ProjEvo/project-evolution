@@ -13,7 +13,16 @@ impl Position {
         }
     }
 
-    /// Computes the distance from this position to `to`
+    /// Computes the distance from this position to `to` position
+    ///
+    /// # Example
+    /// ```
+    /// use project_evolution::creature::Position;
+    ///
+    /// let pos1 = Position::new(3.0, 0.0);
+    /// let pos2 = Position::new(0.0, 4.0);
+    /// assert_eq!(pos1.distance_to(&pos2), 5.0)
+    /// ```
     pub fn distance_to(&self, to: &Position) -> f32 {
         return f32::sqrt(f32::powi(self.x - to.x, 2) + f32::powi(self.y - to.y, 2));
     }

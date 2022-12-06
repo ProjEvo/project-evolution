@@ -2,7 +2,7 @@ use uuid::Uuid;
 
 use super::Position;
 
-/// A node, defined by it's current position and size. Contains a unique id for reference.
+/// A node, defined by it's current [Position] and size. Contains a unique id for reference.
 pub struct Node {
     pub id: Uuid,
     pub position: Position,

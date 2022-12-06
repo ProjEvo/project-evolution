@@ -1,3 +1,5 @@
+//! Manages the simulations of [Creature]s
+
 use std::collections::HashMap;
 
 use rapier::prelude::*;
@@ -10,6 +12,7 @@ pub const FLOOR_HEIGHT: f32 = MAX_WORLD_Y * 0.1;
 pub const FLOOR_TOP_Y: f32 = MAX_WORLD_Y - FLOOR_HEIGHT;
 const GRAVITY: f32 = 10.0;
 
+/// A simulation of a [Creature], using physics
 pub struct Simulation {
     physics_pipeline: PhysicsPipeline,
     physics_pipeline_parameters: PhysicsPipelineParameters,
@@ -19,6 +22,7 @@ pub struct Simulation {
 }
 
 impl Simulation {
+    /// Creates a simulation of a [Creature]
     pub fn new(creature: Creature) -> Simulation {
         // Initialize pipeline params
         let mut physics_pipeline_parameters = PhysicsPipelineParameters {
@@ -106,18 +110,22 @@ impl Simulation {
         }
     }
 
+    /// Gets the [RigidBodySet]
     pub fn rigid_body_set(&self) -> &RigidBodySet {
         &self.physics_pipeline_parameters.rigid_body_set
     }
 
+    /// Gets the [ColliderSet]
     pub fn collider_set(&self) -> &ColliderSet {
         &self.physics_pipeline_parameters.collider_set
     }
 
+    /// Gets the [ImpulseJointSet]
     pub fn impulse_joint_set(&self) -> &ImpulseJointSet {
         &self.physics_pipeline_parameters.impulse_joint_set
     }
 
+    /// Steps the muscles one step forward in time
     fn step_muscles(&mut self) {
         let params = &mut self.physics_pipeline_parameters;
 
@@ -144,6 +152,7 @@ impl Simulation {
         }
     }
 
+    /// Steps the simulation one step forward in time
     pub fn step(&mut self) {
         self.step_muscles();
 
@@ -169,6 +178,7 @@ impl Simulation {
     }
 }
 
+/// A struct to store all the parameters for the [PhysicsPipeline]
 struct PhysicsPipelineParameters {
     gravity: Vector<Real>,
     integration_parameters: IntegrationParameters,
