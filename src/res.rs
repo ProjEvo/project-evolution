@@ -14,7 +14,13 @@ macro_rules! main_separator {
     };
 }
 
-const ICON: &[u8] = include_bytes!(concat!("res", main_separator!(), "icon.png"));
+const ICON: &[u8] = include_bytes!(concat!(
+    "..",
+    main_separator!(),
+    "res",
+    main_separator!(),
+    "icon.png"
+));
 
 pub fn load_icon_data() -> IconData {
     let (icon_rgba, icon_width, icon_height) = {
