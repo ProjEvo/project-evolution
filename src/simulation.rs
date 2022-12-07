@@ -1,6 +1,6 @@
-//! Manages the simulations of [Creature]s
+//! Manages the simulation of a [Creature]
 
-use std::collections::HashMap;
+use std::{collections::HashMap, time::Duration};
 
 use rapier::prelude::*;
 use uuid::Uuid;
@@ -8,6 +8,7 @@ use uuid::Uuid;
 use crate::creature::{Creature, MovementParameters};
 
 pub const STEPS_PER_SECOND: i32 = 60;
+pub const STEPS_FREQUENCY: Duration = Duration::from_nanos(1_000_000_000 / STEPS_PER_SECOND as u64);
 pub const MAX_WORLD_X: f32 = 1000.0;
 pub const MAX_WORLD_Y: f32 = 560.0;
 pub const FLOOR_HEIGHT: f32 = MAX_WORLD_Y * 0.1;
