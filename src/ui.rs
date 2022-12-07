@@ -1,10 +1,10 @@
 //! Manages the UI
 
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 use crate::{
-    creature::{CreatureBuilder, Position},
-    simulation::{Simulation, MAX_WORLD_X, MAX_WORLD_Y, STEPS_PER_SECOND},
+    evolver::Evolver,
+    simulation::{Simulation, MAX_WORLD_X, MAX_WORLD_Y},
 };
 use eframe::{egui, epaint::CircleShape, Theme};
 use egui::{Color32, Painter, Pos2, Stroke, Vec2};
@@ -85,9 +85,9 @@ fn paint_simulation(simulation: &Simulation, painter: &Painter, available_size: 
     }
 }
 
-/// Paints a vec of [Simulation]s using the provided [Painter]
-fn paint_simulations(simulations: &Vec<Simulation>, painter: &Painter, available_size: Vec2) {
-    for simulation in simulations {
+/// Paints a generation using the provided [Painter]
+fn paint_generation(generation: &Vec<Simulation>, painter: &Painter, available_size: Vec2) {
+    for simulation in generation {
         paint_simulation(simulation, painter, available_size)
     }
 }
@@ -96,7 +96,7 @@ fn paint_simulations(simulations: &Vec<Simulation>, painter: &Painter, available
 
 /// Creates new egui ui struct used to populate objects into new Window
 struct App {
-    simulations: Vec<Simulation>,
+    evolver: Evolver,
     paused: bool,
     last_frame: Option<Instant>,
 }
@@ -117,14 +117,11 @@ impl App {
 
     /// Renders the scene
     fn render(&self, painter: &Painter, available_size: Vec2) {
-        paint_simulations(&self.simulations, painter, available_size);
-    }
-
-    // Steps all simulations
-    fn step_all(&mut self) {
-        for simulation in self.simulations.iter_mut() {
-            simulation.step();
-        }
+        paint_generation(
+            &self.evolver.get_current_generation(),
+            painter,
+            available_size,
+        );
     }
 }
 
@@ -150,18 +147,6 @@ impl eframe::App for App {
                 ui.heading("Hello World!");
                 ui.label("This is should be a blank UI with a couple of buttons");
 
-                if ui.button("Add Simulation").clicked() {
-                    let creature = CreatureBuilder::random()
-                        .translate_center_to(Position::new(MAX_WORLD_X / 2.0, MAX_WORLD_Y / 2.0))
-                        .build();
-
-                    self.simulations.push(Simulation::new(creature));
-                }
-
-                if ui.button("Remove Simulations").clicked() {
-                    self.simulations.clear();
-                }
-
                 let play_button_text = match self.paused {
                     true => "Play",
                     false => "Pause",
@@ -171,21 +156,11 @@ impl eframe::App for App {
                     self.paused = !self.paused
                 }
 
-                let mut now = Instant::now();
+                let now = Instant::now();
 
                 if !self.paused {
                     if let Some(last_frame) = self.last_frame {
-                        let mut passed = now.duration_since(last_frame).as_secs_f32();
-                        let delta = 1.0 / STEPS_PER_SECOND as f32;
-
-                        while passed > delta {
-                            passed -= delta;
-                            self.step_all();
-                        }
-
-                        now = now
-                            .checked_sub(Duration::from_secs_f32(passed))
-                            .unwrap_or(now);
+                        self.evolver.step(now.duration_since(last_frame));
                     }
                 }
 
