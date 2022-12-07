@@ -86,8 +86,8 @@ impl CreatureBuilder {
 
         let mut muscles = Vec::new();
 
-        for from in (&creature_builder).nodes.values() {
-            for to in (&creature_builder).nodes.values() {
+        for from in creature_builder.nodes.values() {
+            for to in creature_builder.nodes.values() {
                 if from.id == to.id || tested.contains_key(&(to.id, from.id)) {
                     continue;
                 }
@@ -168,6 +168,13 @@ impl CreatureBuilder {
             muscles: self.muscles,
             muscle_lengths,
         }
+    }
+}
+
+impl Default for CreatureBuilder {
+    /// Same as [CreatureBuilder::new]
+    fn default() -> Self {
+        Self::new()
     }
 }
 

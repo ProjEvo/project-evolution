@@ -1,5 +1,6 @@
 //! Contains the [Creature] struct and all related components of it
 
+#[allow(clippy::module_inception)]
 mod creature;
 mod muscle;
 mod node;

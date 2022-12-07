@@ -158,8 +158,8 @@ impl Simulation {
 
         let params = &mut self.physics_pipeline_parameters;
 
-        let physics_hooks = ();
-        let events_handler = ();
+        let physics_hooks = &();
+        let events_handler = &();
 
         self.physics_pipeline.step(
             &params.gravity,
@@ -172,8 +172,8 @@ impl Simulation {
             &mut params.impulse_joint_set,
             &mut params.multibody_joints_set,
             &mut params.ccd_solver,
-            &physics_hooks,
-            &events_handler,
+            physics_hooks,
+            events_handler,
         );
     }
 }

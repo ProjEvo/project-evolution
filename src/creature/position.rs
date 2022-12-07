@@ -24,7 +24,7 @@ impl Position {
     /// assert_eq!(pos1.distance_to(&pos2), 5.0)
     /// ```
     pub fn distance_to(&self, to: &Position) -> f32 {
-        return f32::sqrt(f32::powi(self.x - to.x, 2) + f32::powi(self.y - to.y, 2));
+        f32::sqrt(f32::powi(self.x - to.x, 2) + f32::powi(self.y - to.y, 2))
     }
 }
 
