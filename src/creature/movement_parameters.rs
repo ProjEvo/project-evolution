@@ -3,7 +3,7 @@ use std::{collections::HashMap, ops::RangeInclusive};
 use rand::Rng;
 use uuid::Uuid;
 
-use crate::simulator::STEPS_PER_SECOND;
+use crate::simulation::STEPS_PER_SECOND;
 
 use super::{Muscle, Node};
 

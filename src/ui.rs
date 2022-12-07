@@ -4,7 +4,7 @@ use std::time::{Duration, Instant};
 
 use crate::{
     creature::{CreatureBuilder, Position},
-    simulator::{Simulation, MAX_WORLD_X, MAX_WORLD_Y, STEPS_PER_SECOND},
+    simulation::{Simulation, MAX_WORLD_X, MAX_WORLD_Y, STEPS_PER_SECOND},
 };
 use eframe::{egui, epaint::CircleShape, Theme};
 use egui::{Color32, Painter, Pos2, Stroke, Vec2};
