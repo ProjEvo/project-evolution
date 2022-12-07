@@ -4,21 +4,25 @@ use std::collections::HashMap;
 
 use rapier::prelude::*;
 
-use crate::creature::Creature;
+use crate::creature::{Creature, MovementParameters};
 
+pub const STEPS_PER_SECOND: i32 = 60;
 pub const MAX_WORLD_X: f32 = 100.0;
 pub const MAX_WORLD_Y: f32 = 56.0;
 pub const FLOOR_HEIGHT: f32 = MAX_WORLD_Y * 0.1;
 pub const FLOOR_TOP_Y: f32 = MAX_WORLD_Y - FLOOR_HEIGHT;
 const GRAVITY: f32 = 10.0;
+// Muscle extension and contraction range, where 0.0 is normal, -1.0 is maximum contraction, and 1.0 is double extension
+const MAX_MUSCLE_CONTRACTION: f32 = -0.5;
+const MAX_MUSCLE_EXTENSION: f32 = 0.5;
+const MUSCLE_STIFFNESS: f32 = 500.0;
 
 /// A simulation of a [Creature], using physics
 pub struct Simulation {
     physics_pipeline: PhysicsPipeline,
     physics_pipeline_parameters: PhysicsPipelineParameters,
-    joint_lengths: HashMap<ImpulseJointHandle, f32>,
-    counter: f32,
-    decreasing: bool,
+    joint_handles_to_movement_parameters: HashMap<ImpulseJointHandle, MovementParameters>,
+    steps: i32,
 }
 
 impl Simulation {
@@ -44,6 +48,10 @@ impl Simulation {
         // Add floor
         let floor_collider = ColliderBuilder::cuboid(f32::MAX, FLOOR_HEIGHT)
             .translation(vector![0.0, FLOOR_TOP_Y + (FLOOR_HEIGHT / 2.0)])
+            .collision_groups(InteractionGroups {
+                memberships: Group::GROUP_1,
+                filter: Group::ALL,
+            })
             .build();
 
         collider_set.insert(floor_collider);
@@ -51,9 +59,10 @@ impl Simulation {
         // Add creature
         let nodes = creature.nodes();
         let muscles = creature.muscles();
-        let muscle_lengths = creature.muscle_lengths();
+        let muscle_id_to_movement_parameters = creature.movement_parameters();
 
         let mut node_id_to_body_handles = HashMap::new();
+        let mut joint_handles_to_movement_parameters = HashMap::new();
 
         // Add node rigid bodies
         for node in nodes.values() {
@@ -65,6 +74,10 @@ impl Simulation {
             node_id_to_body_handles.insert(node.id, body_handle);
 
             let collider = ColliderBuilder::ball(node.size / 2.0)
+                .collision_groups(InteractionGroups {
+                    memberships: Group::GROUP_2.union(Group::GROUP_1),
+                    filter: Group::GROUP_1,
+                })
                 .restitution(0.7)
                 .build();
 
@@ -72,8 +85,6 @@ impl Simulation {
         }
 
         // Add muscle joints
-        let mut joint_lengths = HashMap::new();
-
         for (id, muscle) in muscles {
             let from_node_position = &nodes.get(&muscle.from_id).unwrap().position;
             let to_node_position = &nodes.get(&muscle.to_id).unwrap().position;
@@ -95,7 +106,10 @@ impl Simulation {
             let joint_handle =
                 impulse_joint_set.insert(*from_node_body_handle, *to_node_body_handle, joint, true);
 
-            joint_lengths.insert(joint_handle, muscle_lengths[id]);
+            joint_handles_to_movement_parameters.insert(
+                joint_handle,
+                muscle_id_to_movement_parameters.get(id).unwrap().clone(),
+            );
         }
 
         // Build simulation
@@ -104,9 +118,8 @@ impl Simulation {
         Simulation {
             physics_pipeline,
             physics_pipeline_parameters,
-            joint_lengths,
-            counter: 0.0,
-            decreasing: true,
+            joint_handles_to_movement_parameters,
+            steps: 0,
         }
     }
 
@@ -127,27 +140,20 @@ impl Simulation {
 
     /// Steps the muscles one step forward in time
     fn step_muscles(&mut self) {
-        let params = &mut self.physics_pipeline_parameters;
+        let physics_parameters = &mut self.physics_pipeline_parameters;
 
-        if self.decreasing {
-            self.counter -= 0.01;
-            if self.counter < -0.5 {
-                self.counter = -0.5;
-                self.decreasing = false;
-            }
-        } else {
-            self.counter += 0.01;
-            if self.counter > 0.5 {
-                self.counter = 0.5;
-                self.decreasing = true;
-            }
-        }
+        for (handle, joint) in physics_parameters.impulse_joint_set.iter_mut() {
+            if let Some(movement_parameters) =
+                self.joint_handles_to_movement_parameters.get(&handle)
+            {
+                let muscle_length = movement_parameters.muscle_length();
 
-        for (handle, joint) in params.impulse_joint_set.iter_mut() {
-            if self.joint_lengths.contains_key(&handle) {
-                let joint_length = self.joint_lengths[&handle];
+                let extension_delta = movement_parameters.get_extension_at(self.steps);
+                let extension = MAX_MUSCLE_CONTRACTION
+                    + (MAX_MUSCLE_EXTENSION - MAX_MUSCLE_CONTRACTION) * extension_delta;
+
                 let motor = joint.data.as_prismatic_mut().unwrap();
-                motor.set_motor(self.counter * joint_length, 0.1, 50000.0, 0.5);
+                motor.set_motor(extension * muscle_length, 0.1, MUSCLE_STIFFNESS, 0.5);
             }
         }
     }
@@ -175,6 +181,7 @@ impl Simulation {
             physics_hooks,
             events_handler,
         );
+        self.steps += 1;
     }
 }
 

@@ -1,10 +1,10 @@
 //! Manages the UI
 
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use crate::{
     creature::{CreatureBuilder, Position},
-    simulator::{Simulation, MAX_WORLD_X, MAX_WORLD_Y},
+    simulator::{Simulation, MAX_WORLD_X, MAX_WORLD_Y, STEPS_PER_SECOND},
 };
 use eframe::{egui, epaint::CircleShape, Theme};
 use egui::{Color32, Painter, Pos2, Stroke, Vec2};
@@ -109,6 +109,7 @@ fn paint_simulations(simulations: &Vec<Simulation>, painter: &Painter, available
 struct App {
     simulations: Vec<Simulation>,
     paused: bool,
+    last_frame: Option<Instant>,
 }
 
 impl App {
@@ -120,6 +121,7 @@ impl App {
         // for e.g. egui::PaintCallback.
         App {
             paused: true,
+            last_frame: Some(Instant::now()),
             ..Default::default()
         }
     }
@@ -180,14 +182,30 @@ impl eframe::App for App {
                     self.paused = !self.paused
                 }
 
+                let mut now = Instant::now();
+
                 if !self.paused {
-                    self.step_all();
+                    if let Some(last_frame) = self.last_frame {
+                        let mut passed = now.duration_since(last_frame).as_secs_f32();
+                        let delta = 1.0 / STEPS_PER_SECOND as f32;
+
+                        while passed > delta {
+                            passed -= delta;
+                            self.step_all();
+                        }
+
+                        now = now
+                            .checked_sub(Duration::from_secs_f32(passed))
+                            .unwrap_or(now);
+                    }
                 }
+
+                self.last_frame = Some(now);
 
                 self.render(ui.painter(), total_size);
             });
 
         // Logic to continuously re-render the UI
-        ctx.request_repaint_after(Duration::from_millis(16))
+        ctx.request_repaint();
     }
 }

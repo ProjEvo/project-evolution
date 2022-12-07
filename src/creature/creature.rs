@@ -3,7 +3,7 @@ use std::{collections::HashMap, ops::RangeInclusive};
 use rand::Rng;
 use uuid::{self, Uuid};
 
-use super::{Muscle, Node, Position};
+use super::{MovementParameters, Muscle, Node, Position};
 
 const BASE_RANDOM_NODES: i32 = 3;
 const RANDOM_CHANCE_TO_ADD_NODE: f32 = 0.25;
@@ -17,7 +17,7 @@ pub struct Creature {
     id: Uuid,
     nodes: HashMap<Uuid, Node>,
     muscles: HashMap<Uuid, Muscle>,
-    muscle_lengths: HashMap<Uuid, f32>,
+    movement_parameters: HashMap<Uuid, MovementParameters>,
 }
 
 impl Creature {
@@ -36,9 +36,9 @@ impl Creature {
         &self.muscles
     }
 
-    /// Returns the muscles lengths of the [Creature], keyed by their id
-    pub fn muscle_lengths(&self) -> &HashMap<Uuid, f32> {
-        &self.muscle_lengths
+    /// Returns the movement parameters of the [Creature]'s [Muscle]s, keyed by their id
+    pub fn movement_parameters(&self) -> &HashMap<Uuid, MovementParameters> {
+        &self.movement_parameters
     }
 }
 
@@ -154,19 +154,14 @@ impl CreatureBuilder {
 
     /// Builds the [CreatureBuilder] into a [Creature]
     pub fn build(self) -> Creature {
-        let mut muscle_lengths = HashMap::new();
-
-        for (id, muscle) in &self.muscles {
-            let from = &self.nodes.get(&muscle.from_id).unwrap().position;
-            let to = &self.nodes.get(&muscle.to_id).unwrap().position;
-            muscle_lengths.insert(*id, from.distance_to(to));
-        }
+        let movement_parameters =
+            MovementParameters::generate_for_muscles_and_nodes(&self.muscles, &self.nodes);
 
         Creature {
             id: self.id,
             nodes: self.nodes,
             muscles: self.muscles,
-            muscle_lengths,
+            movement_parameters,
         }
     }
 }
