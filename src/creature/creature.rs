@@ -7,9 +7,9 @@ use super::{MovementParameters, Muscle, Node, Position};
 
 const BASE_RANDOM_NODES: i32 = 3;
 const RANDOM_CHANCE_TO_ADD_NODE: f32 = 0.25;
-const RANDOM_NODE_X_POSITION_RANGE: RangeInclusive<f32> = -10.0..=10.0;
-const RANDOM_NODE_Y_POSITION_RANGE: RangeInclusive<f32> = -10.0..=10.0;
-const RANDOM_NODE_SIZE_RANGE: RangeInclusive<f32> = 1.0..=2.5;
+const RANDOM_NODE_X_POSITION_RANGE: RangeInclusive<f32> = -100.0..=100.0;
+const RANDOM_NODE_Y_POSITION_RANGE: RangeInclusive<f32> = -100.0..=100.0;
+const RANDOM_NODE_SIZE_RANGE: RangeInclusive<f32> = 10.0..=20.0;
 const RANDOM_CHANGE_TO_CONNECT_NODES: f32 = 0.75;
 
 /// A creature, made up of [Node]s and [Muscle]s. Contains a unique id for reference. Built using a [CreatureBuilder].

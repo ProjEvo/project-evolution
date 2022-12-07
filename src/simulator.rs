@@ -3,24 +3,28 @@
 use std::collections::HashMap;
 
 use rapier::prelude::*;
+use uuid::Uuid;
 
 use crate::creature::{Creature, MovementParameters};
 
 pub const STEPS_PER_SECOND: i32 = 60;
-pub const MAX_WORLD_X: f32 = 100.0;
-pub const MAX_WORLD_Y: f32 = 56.0;
+pub const MAX_WORLD_X: f32 = 1000.0;
+pub const MAX_WORLD_Y: f32 = 560.0;
 pub const FLOOR_HEIGHT: f32 = MAX_WORLD_Y * 0.1;
 pub const FLOOR_TOP_Y: f32 = MAX_WORLD_Y - FLOOR_HEIGHT;
-const GRAVITY: f32 = 10.0;
+const GRAVITY: f32 = 100.0;
 // Muscle extension and contraction range, where 0.0 is normal, -1.0 is maximum contraction, and 1.0 is double extension
 const MAX_MUSCLE_CONTRACTION: f32 = -0.5;
 const MAX_MUSCLE_EXTENSION: f32 = 0.5;
-const MUSCLE_STIFFNESS: f32 = 500.0;
+const MUSCLE_TARGET_VELOCITY: f32 = 0.1;
+const MUSCLE_STIFFNESS: f32 = 1.5;
 
 /// A simulation of a [Creature], using physics
 pub struct Simulation {
     physics_pipeline: PhysicsPipeline,
     physics_pipeline_parameters: PhysicsPipelineParameters,
+    creature: Creature,
+    node_id_to_rigid_body_handles: HashMap<Uuid, RigidBodyHandle>,
     joint_handles_to_movement_parameters: HashMap<ImpulseJointHandle, MovementParameters>,
     steps: i32,
 }
@@ -61,7 +65,7 @@ impl Simulation {
         let muscles = creature.muscles();
         let muscle_id_to_movement_parameters = creature.movement_parameters();
 
-        let mut node_id_to_body_handles = HashMap::new();
+        let mut node_id_to_rigid_body_handles = HashMap::new();
         let mut joint_handles_to_movement_parameters = HashMap::new();
 
         // Add node rigid bodies
@@ -71,11 +75,11 @@ impl Simulation {
                 .build();
 
             let body_handle = rigid_body_set.insert(body);
-            node_id_to_body_handles.insert(node.id, body_handle);
+            node_id_to_rigid_body_handles.insert(node.id, body_handle);
 
             let collider = ColliderBuilder::ball(node.size / 2.0)
                 .collision_groups(InteractionGroups {
-                    memberships: Group::GROUP_2.union(Group::GROUP_1),
+                    memberships: Group::GROUP_2,
                     filter: Group::GROUP_1,
                 })
                 .restitution(0.7)
@@ -88,28 +92,71 @@ impl Simulation {
         for (id, muscle) in muscles {
             let from_node_position = &nodes.get(&muscle.from_id).unwrap().position;
             let to_node_position = &nodes.get(&muscle.to_id).unwrap().position;
-            let from_node_body_handle = node_id_to_body_handles.get(&muscle.from_id).unwrap();
-            let to_node_body_handle = node_id_to_body_handles.get(&muscle.to_id).unwrap();
+            let from_node_body_handle = node_id_to_rigid_body_handles.get(&muscle.from_id).unwrap();
+            let to_node_body_handle = node_id_to_rigid_body_handles.get(&muscle.to_id).unwrap();
+            let movement_parameters = muscle_id_to_movement_parameters.get(id).unwrap().clone();
 
             let offset = point![
                 to_node_position.x - from_node_position.x,
                 to_node_position.y - from_node_position.y
             ];
 
+            let rotate_body_from = RigidBodyBuilder::dynamic()
+                .translation(vector![from_node_position.x, from_node_position.y])
+                .build();
+
+            let rotate_body_from_handle = rigid_body_set.insert(rotate_body_from);
+
+            let collider_from = ColliderBuilder::ball(1.0)
+                .collision_groups(InteractionGroups {
+                    memberships: Group::NONE,
+                    filter: Group::NONE,
+                })
+                .build();
+
+            collider_set.insert_with_parent(collider_from, rotate_body_from_handle, rigid_body_set);
+
+            let from_joint = RevoluteJointBuilder::new().build();
+
+            impulse_joint_set.insert(
+                *from_node_body_handle,
+                rotate_body_from_handle,
+                from_joint,
+                true,
+            );
+
+            let rotate_body_to = RigidBodyBuilder::dynamic()
+                .translation(vector![to_node_position.x, to_node_position.y])
+                .build();
+
+            let rotate_body_to_handle = rigid_body_set.insert(rotate_body_to);
+
+            let collider_to = ColliderBuilder::ball(1.0)
+                .collision_groups(InteractionGroups {
+                    memberships: Group::NONE,
+                    filter: Group::NONE,
+                })
+                .build();
+
+            collider_set.insert_with_parent(collider_to, rotate_body_to_handle, rigid_body_set);
+
+            let to_joint = RevoluteJointBuilder::new().build();
+
+            impulse_joint_set.insert(*to_node_body_handle, rotate_body_to_handle, to_joint, true);
+
+            let joint_length = movement_parameters.muscle_length() * 1.25;
             let joint =
                 PrismaticJointBuilder::new(UnitVector::new_normalize(vector![offset.x, offset.y]))
                     .local_anchor1(offset)
                     .local_anchor2(point![0.0, 0.0])
                     .set_motor(0.0, 0.0, 0.0, 0.0)
+                    .limits([joint_length * -0.5, joint_length * 0.25])
                     .build();
 
             let joint_handle =
                 impulse_joint_set.insert(*from_node_body_handle, *to_node_body_handle, joint, true);
 
-            joint_handles_to_movement_parameters.insert(
-                joint_handle,
-                muscle_id_to_movement_parameters.get(id).unwrap().clone(),
-            );
+            joint_handles_to_movement_parameters.insert(joint_handle, movement_parameters);
         }
 
         // Build simulation
@@ -118,24 +165,26 @@ impl Simulation {
         Simulation {
             physics_pipeline,
             physics_pipeline_parameters,
+            creature,
+            node_id_to_rigid_body_handles,
             joint_handles_to_movement_parameters,
             steps: 0,
         }
     }
 
-    /// Gets the [RigidBodySet]
-    pub fn rigid_body_set(&self) -> &RigidBodySet {
-        &self.physics_pipeline_parameters.rigid_body_set
+    /// Gets the [Creature] being simulated
+    pub fn creature(&self) -> &Creature {
+        &self.creature
     }
 
-    /// Gets the [ColliderSet]
-    pub fn collider_set(&self) -> &ColliderSet {
-        &self.physics_pipeline_parameters.collider_set
-    }
-
-    /// Gets the [ImpulseJointSet]
-    pub fn impulse_joint_set(&self) -> &ImpulseJointSet {
-        &self.physics_pipeline_parameters.impulse_joint_set
+    /// Gets the position of the node by it's id
+    pub fn get_position_of_node(&self, id: Uuid) -> Vector<f32> {
+        *self
+            .physics_pipeline_parameters
+            .rigid_body_set
+            .get(*self.node_id_to_rigid_body_handles.get(&id).unwrap())
+            .unwrap()
+            .translation()
     }
 
     /// Steps the muscles one step forward in time
@@ -153,7 +202,12 @@ impl Simulation {
                     + (MAX_MUSCLE_EXTENSION - MAX_MUSCLE_CONTRACTION) * extension_delta;
 
                 let motor = joint.data.as_prismatic_mut().unwrap();
-                motor.set_motor(extension * muscle_length, 0.1, MUSCLE_STIFFNESS, 0.5);
+                motor.set_motor(
+                    extension * muscle_length,
+                    MUSCLE_TARGET_VELOCITY,
+                    MUSCLE_STIFFNESS,
+                    0.5,
+                );
             }
         }
     }
