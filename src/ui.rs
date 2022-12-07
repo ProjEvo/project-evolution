@@ -52,12 +52,11 @@ fn transform_n_from_world_to_pos2(n: f32, available_size: Vec2) -> f32 {
 
 /// Paints a [Simulation] using the provided [Painter]
 fn paint_simulation(simulation: &Simulation, painter: &Painter, available_size: Vec2) {
-    let rigid_body_set = simulation.rigid_body_set();
-    let impulse_joint_set = simulation.impulse_joint_set();
+    let creature = simulation.creature();
 
-    for (_, joint) in impulse_joint_set.iter() {
-        let body1_position = rigid_body_set.get(joint.body1).unwrap().translation();
-        let body2_position = rigid_body_set.get(joint.body2).unwrap().translation();
+    for muscle in creature.muscles().values() {
+        let body1_position = &simulation.get_position_of_node(muscle.from_id);
+        let body2_position = &simulation.get_position_of_node(muscle.to_id);
         let point1 = transform_position_from_world_to_pos2(body1_position, available_size);
         let point2 = transform_position_from_world_to_pos2(body2_position, available_size);
 
@@ -72,27 +71,17 @@ fn paint_simulation(simulation: &Simulation, painter: &Painter, available_size: 
         painter.add(line);
     }
 
-    for (_, body) in rigid_body_set.iter() {
-        for collider_handle in body.colliders() {
-            let collider = simulation.collider_set().get(*collider_handle).unwrap();
+    for (id, node) in creature.nodes() {
+        let position = simulation.get_position_of_node(*id);
 
-            let as_ball = collider.shape().as_ball();
+        let circle = CircleShape {
+            center: transform_position_from_world_to_pos2(&position, available_size),
+            radius: transform_n_from_world_to_pos2(node.size / 2.0, available_size),
+            fill: Color32::BLUE,
+            stroke: Stroke::default(),
+        };
 
-            if as_ball.is_none() {
-                continue;
-            }
-
-            let as_ball = as_ball.unwrap();
-
-            let circle = CircleShape {
-                center: transform_position_from_world_to_pos2(body.translation(), available_size),
-                radius: transform_n_from_world_to_pos2(as_ball.radius, available_size),
-                fill: Color32::BLUE,
-                stroke: Stroke::default(),
-            };
-
-            painter.add(circle);
-        }
+        painter.add(circle);
     }
 }
 
