@@ -1,9 +1,12 @@
 use std::{collections::HashMap, ops::RangeInclusive};
 
+use egui::Color32;
 use rand::Rng;
 use uuid::{self, Uuid};
 
-use super::{MovementParameters, Muscle, Node, Position};
+use crate::util;
+
+use super::{CreatureColors, MovementParameters, Muscle, Node, Position};
 
 const BASE_RANDOM_NODES: i32 = 3;
 const RANDOM_CHANCE_TO_ADD_NODE: f32 = 0.25;
@@ -11,6 +14,7 @@ const RANDOM_NODE_X_POSITION_RANGE: RangeInclusive<f32> = -100.0..=100.0;
 const RANDOM_NODE_Y_POSITION_RANGE: RangeInclusive<f32> = -100.0..=100.0;
 const RANDOM_NODE_SIZE_RANGE: RangeInclusive<f32> = 10.0..=20.0;
 const RANDOM_CHANGE_TO_CONNECT_NODES: f32 = 0.75;
+const COLOR_H_RANGE: RangeInclusive<u16> = 0..=300;
 
 /// A creature, made up of [Node]s and [Muscle]s. Contains a unique id for reference. Built using a [CreatureBuilder].
 pub struct Creature {
@@ -18,6 +22,7 @@ pub struct Creature {
     nodes: HashMap<Uuid, Node>,
     muscles: HashMap<Uuid, Muscle>,
     movement_parameters: HashMap<Uuid, MovementParameters>,
+    colors: CreatureColors,
 }
 
 impl Creature {
@@ -39,6 +44,11 @@ impl Creature {
     /// Returns the movement parameters of the [Creature]'s [Muscle]s, keyed by their id
     pub fn movement_parameters(&self) -> &HashMap<Uuid, MovementParameters> {
         &self.movement_parameters
+    }
+
+    /// Returns the node color
+    pub fn colors(&self) -> &CreatureColors {
+        &self.colors
     }
 }
 
@@ -171,14 +181,28 @@ impl CreatureBuilder {
 
     /// Builds the [CreatureBuilder] into a [Creature]
     pub fn build(self) -> Creature {
+        let mut rng = rand::thread_rng();
+
         let movement_parameters =
             MovementParameters::generate_for_muscles_and_nodes(&self.muscles, &self.nodes);
+
+        let h = rng.gen_range(COLOR_H_RANGE);
+        let (nr, ng, nb) = util::hsv_to_rgb(h, 75, 100);
+        let (er, eg, eb) = util::hsv_to_rgb(h, 75, 75);
+        let (cr, cg, cb) = util::hsv_to_rgb(h, 75, 50);
+
+        let colors = CreatureColors {
+            node_color: Color32::from_rgb(nr, ng, nb),
+            muscle_extended: Color32::from_rgb(er, eg, eb),
+            muscle_contracted: Color32::from_rgb(cr, cg, cb),
+        };
 
         Creature {
             id: self.id,
             nodes: self.nodes,
             muscles: self.muscles,
             movement_parameters,
+            colors,
         }
     }
 }

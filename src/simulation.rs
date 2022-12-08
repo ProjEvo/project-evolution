@@ -195,6 +195,14 @@ impl Simulation {
             .translation()
     }
 
+    pub fn get_extension_delta_of_muscle(&self, id: Uuid) -> f32 {
+        self.creature
+            .movement_parameters()
+            .get(&id)
+            .unwrap()
+            .get_extension_at(self.steps)
+    }
+
     /// Steps the muscles one step forward in time
     fn step_muscles(&mut self) {
         let physics_parameters = &mut self.physics_pipeline_parameters;

@@ -2,12 +2,14 @@
 
 #[allow(clippy::module_inception)]
 mod creature;
+mod creature_colors;
 mod movement_parameters;
 mod muscle;
 mod node;
 mod position;
 
 pub use creature::{Creature, CreatureBuilder};
+pub use creature_colors::CreatureColors;
 pub use movement_parameters::MovementParameters;
 pub use muscle::Muscle;
 pub use node::Node;

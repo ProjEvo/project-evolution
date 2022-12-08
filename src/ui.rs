@@ -71,18 +71,18 @@ fn distance(a: &rapier::prelude::Vector<f32>, b: &rapier::prelude::Vector<f32>) 
 /// Paints a [Simulation] using the provided [Painter]
 fn paint_simulation(simulation: &Simulation, painter: &Painter, available_size: Vec2) {
     let creature = simulation.creature();
+    let colors = creature.colors();
+    let movement_parameters = creature.movement_parameters();
 
     for (id, muscle) in creature.muscles() {
         let from_position = &simulation.get_position_of_node(muscle.from_id);
         let to_position = &simulation.get_position_of_node(muscle.to_id);
+        let extension_delta = simulation.get_extension_delta_of_muscle(*id);
         let from = transform_position_from_world_to_pos2(from_position, available_size);
         let to = transform_position_from_world_to_pos2(to_position, available_size);
 
-        let normal_length = creature
-            .movement_parameters()
-            .get(id)
-            .unwrap()
-            .muscle_length();
+        let muscle_movement_parameters = movement_parameters.get(id).unwrap();
+        let normal_length = muscle_movement_parameters.muscle_length();
         let current_length = distance(from_position, to_position);
 
         let mut thickness_delta = current_length / normal_length;
@@ -98,11 +98,17 @@ fn paint_simulation(simulation: &Simulation, painter: &Painter, available_size: 
         let thickness = MIN_MUSCLE_THICKNESS
             + ((1.0 - (thickness_delta - 0.5)) * (MAX_MUSCLE_THICKNESS - MIN_MUSCLE_THICKNESS));
 
+        let muscle_color = if extension_delta > 0.5 {
+            colors.muscle_extended
+        } else {
+            colors.muscle_contracted
+        };
+
         let line = egui::Shape::line(
             vec![from, to],
             Stroke::from((
                 transform_x_from_world_to_pos2(thickness, available_size),
-                Color32::RED,
+                muscle_color,
             )),
         );
 
@@ -115,7 +121,7 @@ fn paint_simulation(simulation: &Simulation, painter: &Painter, available_size: 
         let circle = CircleShape {
             center: transform_position_from_world_to_pos2(&position, available_size),
             radius: transform_x_from_world_to_pos2(node.size / 2.0, available_size),
-            fill: Color32::BLUE,
+            fill: colors.node_color,
             stroke: Stroke::none(),
         };
 
