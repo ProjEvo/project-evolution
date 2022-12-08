@@ -3,16 +3,19 @@
 use std::time::Duration;
 
 use crate::{
-    creature::CreatureBuilder,
-    simulation::{Simulation, MAX_WORLD_X, MAX_WORLD_Y, STEPS_FREQUENCY},
+    creature::{CreatureBuilder, Position},
+    simulation::{Simulation, FLOOR_TOP_Y, MAX_WORLD_X, STEPS_FREQUENCY, STEPS_PER_SECOND},
 };
 
-const SIMULATIONS_PER_GENERATION: i32 = 10;
+const SIMULATIONS_PER_GENERATION: i32 = 100;
+const STEPS_PER_GENERATION: i32 = STEPS_PER_SECOND * 15;
+const STEPS_PER_EVOLUTION: i32 = STEPS_PER_SECOND * 5;
 
 /// Manages the evolution of [Creature](crate::creature::Creature)s using generations of [Simulation]s
 pub struct Evolver {
     generations: Vec<Vec<Simulation>>,
     time_left_over: Duration,
+    state: EvolverState,
 }
 
 impl Evolver {
@@ -20,6 +23,9 @@ impl Evolver {
         let mut evolver = Evolver {
             generations: Vec::new(),
             time_left_over: Duration::ZERO,
+            state: EvolverState::SimulatingGeneration {
+                steps_left: STEPS_PER_GENERATION,
+            },
         };
 
         evolver.generate_next_generation();
@@ -27,38 +33,64 @@ impl Evolver {
         evolver
     }
 
+    pub fn state(&self) -> EvolverState {
+        self.state
+    }
+
     fn generate_next_generation(&mut self) {
-        if self.generations.is_empty() {
-            // Create first generation
-            let mut generation = Vec::new();
+        // if self.generations.is_empty() {
+        // Create first generation
+        let mut generation = Vec::new();
 
-            for _ in 0..SIMULATIONS_PER_GENERATION {
-                generation.push(Simulation::new(
-                    CreatureBuilder::random()
-                        .translate(MAX_WORLD_X / 2.0, MAX_WORLD_Y / 2.0)
-                        .build(),
-                ))
-            }
-
-            self.generations.push(generation);
-
-            return;
+        for _ in 0..SIMULATIONS_PER_GENERATION {
+            generation.push(Simulation::new(
+                CreatureBuilder::random()
+                    .translate_bottom_center_to(Position::new(MAX_WORLD_X / 2.0, FLOOR_TOP_Y))
+                    .build(),
+            ))
         }
 
-        // Otherwise, improve last generation
-        let generation = self.get_current_generation();
+        self.generations.push(generation);
 
-        println!("Need to improve generation of size {}", generation.len())
+        return;
+        // }
+
+        // Otherwise, improve last generation
+        // let generation = self.get_current_generation();
+
+        // println!("Need to improve generation of size {}", generation.len())
     }
 
     pub fn get_current_generation(&self) -> &Vec<Simulation> {
         &self.generations.last().unwrap()
     }
 
-    fn step_current_generation(&mut self) {
-        for simulation in self.generations.last_mut().unwrap() {
-            simulation.step();
-        }
+    fn run_step(&mut self) {
+        match self.state {
+            EvolverState::SimulatingGeneration { ref mut steps_left } => {
+                *steps_left -= 1;
+                if *steps_left <= 0 {
+                    self.state = EvolverState::Evolving {
+                        steps_left: STEPS_PER_EVOLUTION,
+                    };
+
+                    return;
+                }
+                for simulation in self.generations.last_mut().unwrap() {
+                    simulation.step();
+                }
+            }
+            EvolverState::Evolving { ref mut steps_left } => {
+                *steps_left -= 1;
+                if *steps_left <= 0 {
+                    self.state = EvolverState::SimulatingGeneration {
+                        steps_left: STEPS_PER_GENERATION,
+                    };
+
+                    self.generate_next_generation();
+                }
+            }
+        };
     }
 
     pub fn step(&mut self, mut time: Duration) {
@@ -66,7 +98,7 @@ impl Evolver {
 
         while time > STEPS_FREQUENCY {
             time -= STEPS_FREQUENCY;
-            self.step_current_generation();
+            self.run_step();
         }
 
         self.time_left_over = time;
@@ -78,4 +110,10 @@ impl Default for Evolver {
     fn default() -> Self {
         Self::new()
     }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum EvolverState {
+    SimulatingGeneration { steps_left: i32 },
+    Evolving { steps_left: i32 },
 }

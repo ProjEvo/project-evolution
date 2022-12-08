@@ -13,12 +13,12 @@ pub const MAX_WORLD_X: f32 = 1000.0;
 pub const MAX_WORLD_Y: f32 = 560.0;
 pub const FLOOR_HEIGHT: f32 = MAX_WORLD_Y * 0.1;
 pub const FLOOR_TOP_Y: f32 = MAX_WORLD_Y - FLOOR_HEIGHT;
-const GRAVITY: f32 = 100.0;
+const GRAVITY: f32 = 200.0;
 // Muscle extension and contraction range, where 0.0 is normal, -1.0 is maximum contraction, and 1.0 is double extension
 const MAX_MUSCLE_CONTRACTION: f32 = -0.5;
 const MAX_MUSCLE_EXTENSION: f32 = 0.5;
-const MUSCLE_TARGET_VELOCITY: f32 = 0.1;
-const MUSCLE_STIFFNESS: f32 = 1.5;
+const MUSCLE_LIMIT_FLUX: f32 = 1.15; // The percentage range muscles can go over max extension (1.15 = 15% over)
+const MUSCLE_STIFFNESS: f32 = 5.0; // How stiff the muscles are
 
 /// A simulation of a [Creature], using physics
 pub struct Simulation {
@@ -51,15 +51,19 @@ impl Simulation {
         let impulse_joint_set = &mut physics_pipeline_parameters.impulse_joint_set;
 
         // Add floor
+        let floor = RigidBodyBuilder::fixed()
+            .translation(vector![0.0, MAX_WORLD_Y])
+            .build();
+        let floor_handle = rigid_body_set.insert(floor);
+
         let floor_collider = ColliderBuilder::cuboid(f32::MAX, FLOOR_HEIGHT)
-            .translation(vector![0.0, FLOOR_TOP_Y + (FLOOR_HEIGHT / 2.0)])
             .collision_groups(InteractionGroups {
                 memberships: Group::GROUP_1,
                 filter: Group::ALL,
             })
             .build();
 
-        collider_set.insert(floor_collider);
+        collider_set.insert_with_parent(floor_collider, floor_handle, rigid_body_set);
 
         // Add creature
         let nodes = creature.nodes();
@@ -145,13 +149,16 @@ impl Simulation {
 
             impulse_joint_set.insert(*to_node_body_handle, rotate_body_to_handle, to_joint, true);
 
-            let joint_length = movement_parameters.muscle_length() * 1.25;
+            let joint_length = movement_parameters.muscle_length();
             let joint =
                 PrismaticJointBuilder::new(UnitVector::new_normalize(vector![offset.x, offset.y]))
                     .local_anchor1(offset)
                     .local_anchor2(point![0.0, 0.0])
                     .set_motor(0.0, 0.0, 0.0, 0.0)
-                    .limits([joint_length * -0.5, joint_length * 0.25])
+                    .limits([
+                        joint_length * MUSCLE_LIMIT_FLUX * MAX_MUSCLE_CONTRACTION,
+                        joint_length * MUSCLE_LIMIT_FLUX * MAX_MUSCLE_EXTENSION,
+                    ])
                     .build();
 
             let joint_handle =
@@ -203,12 +210,7 @@ impl Simulation {
                     + (MAX_MUSCLE_EXTENSION - MAX_MUSCLE_CONTRACTION) * extension_delta;
 
                 let motor = joint.data.as_prismatic_mut().unwrap();
-                motor.set_motor(
-                    extension * muscle_length,
-                    MUSCLE_TARGET_VELOCITY,
-                    MUSCLE_STIFFNESS,
-                    0.5,
-                );
+                motor.set_motor_position(extension * muscle_length, MUSCLE_STIFFNESS, 0.5);
             }
         }
     }

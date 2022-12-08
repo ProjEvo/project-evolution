@@ -133,21 +133,38 @@ impl CreatureBuilder {
         self
     }
 
-    /// Computes a creatures center and translates it to be centered around that position
-    pub fn translate_center_to(self, position: Position) -> CreatureBuilder {
+    /// Computes a creatures bottom center and translates it's bottom center to that position
+    ///
+    /// # Explanation
+    /// For example, if a creature looked like:
+    ///
+    /// ```text
+    /// A --- B
+    ///  \
+    ///   \
+    ///    C
+    /// ```
+    ///
+    /// Translating to a point P would put C there
+    pub fn translate_bottom_center_to(self, position: Position) -> CreatureBuilder {
         let mut total_nodes: f32 = 0.0;
         let mut x_sum: f32 = 0.0;
-        let mut y_sum: f32 = 0.0;
+        let mut y_max: f32 = f32::MIN;
 
         for node in self.nodes.values() {
             total_nodes += 1.0;
 
             x_sum += node.position.x;
-            y_sum += node.position.y;
+
+            let this_y_max = node.position.y + (node.size / 2.0);
+
+            if this_y_max > y_max {
+                y_max = this_y_max
+            }
         }
 
         let translate_x = position.x - (x_sum / total_nodes);
-        let translate_y = position.y - (y_sum / total_nodes);
+        let translate_y = position.y - y_max;
 
         self.translate(translate_x, translate_y)
     }
