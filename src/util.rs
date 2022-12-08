@@ -11,7 +11,7 @@ pub fn hsv_to_rgb(h: u16, s: u8, v: u8) -> (u8, u8, u8) {
     let dh = ((h % 360) as f32 / 60.0) - i as f32;
     let rv = (delta_v * MAX_RGB as f32) as u8;
 
-    if s <= 0 {
+    if s == 0 {
         return (rv, rv, rv);
     }
 

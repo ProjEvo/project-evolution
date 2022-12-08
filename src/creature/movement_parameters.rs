@@ -9,7 +9,7 @@ use super::{Muscle, Node};
 
 type Range = RangeInclusive<i32>;
 
-const OFFSET_RANGE: Range = 0..=STEPS_PER_SECOND * 1;
+const OFFSET_RANGE: Range = 0..=STEPS_PER_SECOND;
 
 const EXTENSION_PERIOD_RANGE: Range = STEPS_PER_SECOND / 4..=STEPS_PER_SECOND * 4;
 const CONTRACTION_PERIOD_RANGE: Range = STEPS_PER_SECOND / 4..=STEPS_PER_SECOND * 4;
@@ -51,7 +51,7 @@ impl MovementParameters {
     }
 
     pub fn muscle_length(&self) -> f32 {
-        *&self.muscle_length
+        self.muscle_length
     }
 
     /// Gets the extension delta based on existing parameters
@@ -81,7 +81,7 @@ impl MovementParameters {
         step_delta -= self.extension_period;
 
         // Contraction period (1 -> 0)
-        return 1.0 - (step_delta as f32 / self.contraction_period as f32);
+        1.0 - (step_delta as f32 / self.contraction_period as f32)
     }
 }
 

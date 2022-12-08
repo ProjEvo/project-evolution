@@ -52,7 +52,7 @@ impl Evolver {
 
         self.generations.push(generation);
 
-        return;
+        // return;
         // }
 
         // Otherwise, improve last generation
@@ -62,7 +62,7 @@ impl Evolver {
     }
 
     pub fn get_current_generation(&self) -> &Vec<Simulation> {
-        &self.generations.last().unwrap()
+        self.generations.last().unwrap()
     }
 
     fn run_step(&mut self) {
