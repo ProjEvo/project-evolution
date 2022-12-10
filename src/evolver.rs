@@ -15,15 +15,20 @@ const OFFSPRING_PER_CREATURE: i32 = 2;
 
 /// Manages the evolution of [Creature](crate::creature::Creature)s using generations of [Simulation]s
 pub struct Evolver {
-    generations: Vec<Vec<Simulation>>,
+    current_generation: Vec<Simulation>,
+    on_generation: usize,
+    generation_scores: Vec<Vec<f32>>,
     time_left_over: Duration,
     state: EvolverState,
 }
 
 impl Evolver {
+    /// Creates a new Evolver
     pub fn new() -> Evolver {
         let mut evolver = Evolver {
-            generations: Vec::new(),
+            current_generation: Vec::new(),
+            on_generation: 0,
+            generation_scores: Vec::new(),
             time_left_over: Duration::ZERO,
             state: EvolverState::SimulatingGeneration {
                 steps_left: STEPS_PER_GENERATION,
@@ -35,13 +40,15 @@ impl Evolver {
         evolver
     }
 
+    /// Gets the current state of the Evolver
     pub fn state(&self) -> EvolverState {
         self.state
     }
 
+    /// Generates the next generation from the current one or randomly if the first generation
     fn generate_next_generation(&mut self) {
         let bottom_center = Position::new(WORLD_X_SIZE / 2.0, FLOOR_TOP_Y);
-        if self.generations.is_empty() {
+        if self.on_generation == 0 {
             // Create first generation
             let mut generation = Vec::new();
 
@@ -53,16 +60,20 @@ impl Evolver {
                 ))
             }
 
-            self.generations.push(generation);
+            self.current_generation = generation;
+            self.on_generation += 1;
 
             return;
         }
 
         // Otherwise, improve last generation
-        let sorted_generation = self.generations.last_mut().unwrap();
+        let sorted_generation = &mut self.current_generation;
         sorted_generation.sort_by(|a, b| b.get_score().total_cmp(&a.get_score()));
 
-        let mut new_generation: Vec<Simulation> = Vec::new();
+        let old_scores = sorted_generation.iter().map(|s| s.get_score()).collect();
+        self.generation_scores.push(old_scores);
+
+        let mut new_generation = Vec::new();
 
         for simulation in sorted_generation.iter() {
             if new_generation.len() as i32 >= SIMULATIONS_PER_GENERATION {
@@ -80,13 +91,26 @@ impl Evolver {
             }
         }
 
-        self.generations.push(new_generation);
+        self.current_generation = new_generation;
+        self.on_generation += 1;
     }
 
-    pub fn get_current_generation(&self) -> &Vec<Simulation> {
-        self.generations.last().unwrap()
+    /// Gets the current generation
+    pub fn current_generation(&self) -> &Vec<Simulation> {
+        &self.current_generation
     }
 
+    /// Returns the number of the current generation
+    pub fn on_generation(&self) -> usize {
+        self.on_generation
+    }
+
+    /// Gets the stored scores for past generations
+    pub fn generation_scores(&self) -> &Vec<Vec<f32>> {
+        &self.generation_scores
+    }
+
+    /// Steps the evolver
     fn step(&mut self) {
         match self.state {
             EvolverState::SimulatingGeneration { ref mut steps_left } => {
@@ -98,7 +122,7 @@ impl Evolver {
 
                     return;
                 }
-                for simulation in self.generations.last_mut().unwrap() {
+                for simulation in &mut self.current_generation {
                     simulation.step();
                 }
             }
@@ -115,6 +139,7 @@ impl Evolver {
         };
     }
 
+    /// Runs the evolver for a certain amount of time
     pub fn run(&mut self, mut time: Duration) {
         time += self.time_left_over;
 
@@ -134,6 +159,7 @@ impl Default for Evolver {
     }
 }
 
+/// Represents the current state of an evolver
 #[derive(Debug, Clone, Copy)]
 pub enum EvolverState {
     SimulatingGeneration { steps_left: i32 },

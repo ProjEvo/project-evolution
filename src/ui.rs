@@ -313,7 +313,7 @@ impl App {
 
     /// Renders the scene
     fn render(&mut self, painter: &Painter) {
-        let generation = self.evolver.get_current_generation();
+        let generation = self.evolver.current_generation();
         self.max_x = generation
             .iter()
             .map(|simulation| simulation.get_bounds().1.x)
