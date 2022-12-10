@@ -2,7 +2,7 @@
 
 use std::{collections::HashMap, time::Duration};
 
-use rapier::prelude::*;
+use rapier::{na::Vector2, prelude::*};
 use uuid::Uuid;
 
 use crate::{
@@ -205,6 +205,24 @@ impl Simulation {
             .get(&id)
             .unwrap()
             .get_extension_at(self.steps)
+    }
+
+    /// Gets the lowest position to safely display text above
+    pub fn get_text_position(&self) -> Vector2<f32> {
+        let bodies = self.node_id_to_rigid_body_handles.values().map(|handle| {
+            self.physics_pipeline_parameters
+                .rigid_body_set
+                .get(*handle)
+                .unwrap()
+        });
+        let x_pos_iter = bodies.clone().map(|body| body.translation().x);
+        let y_pos_iter = bodies.map(|body| body.translation().y);
+
+        let x_min = x_pos_iter.clone().min_by(util::cmp_f32).unwrap();
+        let x_max = x_pos_iter.max_by(util::cmp_f32).unwrap();
+        let y_min = y_pos_iter.min_by(util::cmp_f32).unwrap();
+
+        Vector2::new((x_min + x_max) / 2.0, y_min)
     }
 
     /// Gets the score (furthest x distance) of this simulation

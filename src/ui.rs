@@ -8,10 +8,13 @@ use crate::{
 };
 use eframe::{
     egui,
-    epaint::{CircleShape, RectShape},
+    epaint::{CircleShape, RectShape, TextShape},
     Theme,
 };
-use egui::{Align, Color32, FontId, Layout, Painter, Pos2, Rect, RichText, Rounding, Stroke, Vec2};
+use egui::{
+    text::LayoutJob, Align, Color32, FontFamily, FontId, Layout, Painter, Pos2, Rect, RichText,
+    Rounding, Stroke, TextFormat, Vec2,
+};
 
 use crate::res;
 
@@ -20,6 +23,7 @@ const DEFAULT_SPEED: usize = 4;
 const MIN_MUSCLE_THICKNESS: f32 = 1.5;
 const MAX_MUSCLE_THICKNESS: f32 = 3.0;
 const TEXT_COLOR: Color32 = Color32::WHITE;
+const CREATURE_SCORE_TEXT_SIZE: f32 = 20.0;
 
 /// Initializes the UI
 pub fn init() {
@@ -68,12 +72,34 @@ fn distance(a: &rapier::prelude::Vector<f32>, b: &rapier::prelude::Vector<f32>) 
     f32::sqrt(f32::powi(a.x - b.x, 2) + f32::powi(a.y - b.y, 2))
 }
 
+/// Utility method to paint text at a position
+fn paint_text(text: String, position: Pos2, size: f32, color: Color32, painter: &Painter) {
+    let mut job = LayoutJob::default();
+
+    job.append(
+        text.as_str(),
+        0.0,
+        TextFormat {
+            font_id: FontId::new(size, FontFamily::Proportional),
+            color,
+            ..Default::default()
+        },
+    );
+
+    let galley = painter.ctx().fonts().layout_job(job);
+
+    let text = TextShape::new(position, galley);
+
+    painter.add(text);
+}
+
 /// Paints a [Simulation] using the provided [Painter]
 fn paint_simulation(simulation: &Simulation, painter: &Painter, available_size: Vec2) {
     let creature = simulation.creature();
     let colors = creature.colors();
     let movement_parameters = creature.movement_parameters();
 
+    // Paint muscles
     for (id, muscle) in creature.muscles() {
         let from_position = &simulation.get_position_of_node(muscle.from_id);
         let to_position = &simulation.get_position_of_node(muscle.to_id);
@@ -115,17 +141,34 @@ fn paint_simulation(simulation: &Simulation, painter: &Painter, available_size: 
         painter.add(line);
     }
 
+    // Paint nodes
     for (id, node) in creature.nodes() {
         let position = simulation.get_position_of_node(*id);
 
         let circle = CircleShape {
             center: transform_position_from_world_to_pos2(&position, available_size),
             radius: transform_x_from_world_to_pos2(node.size / 2.0, available_size),
-            fill: colors.node_color,
+            fill: colors.node,
             stroke: Stroke::none(),
         };
 
         painter.add(circle);
+    }
+
+    // Paint distance
+    {
+        let score = simulation.get_score();
+        let mut position = simulation.get_text_position();
+
+        position.y -= CREATURE_SCORE_TEXT_SIZE;
+
+        paint_text(
+            format!("{:.2}m", score),
+            transform_position_from_world_to_pos2(&position, available_size),
+            CREATURE_SCORE_TEXT_SIZE,
+            colors.score_text,
+            painter,
+        );
     }
 }
 

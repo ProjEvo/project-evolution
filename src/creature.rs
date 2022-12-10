@@ -206,11 +206,13 @@ impl CreatureBuilder {
         let (nr, ng, nb) = util::hsv_to_rgb(h, 75, 100);
         let (er, eg, eb) = util::hsv_to_rgb(h, 75, 75);
         let (cr, cg, cb) = util::hsv_to_rgb(h, 75, 50);
+        let (sr, sg, sb) = util::hsv_to_rgb(h, 75, 95);
 
         let colors = CreatureColors {
-            node_color: Color32::from_rgb(nr, ng, nb),
+            node: Color32::from_rgb(nr, ng, nb),
             muscle_extended: Color32::from_rgb(er, eg, eb),
             muscle_contracted: Color32::from_rgb(cr, cg, cb),
+            score_text: Color32::from_rgb(sr, sg, sb),
         };
 
         Creature {
