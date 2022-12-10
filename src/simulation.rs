@@ -208,8 +208,8 @@ impl Simulation {
             .get_extension_at(self.steps)
     }
 
-    /// Gets the lowest position to safely display text above
-    pub fn get_text_position(&self) -> Vector2<f32> {
+    /// Gets the bounds of the [Creature] in the form (top_left, bottom_right)
+    pub fn get_bounds(&self) -> (Vector2<f32>, Vector2<f32>) {
         let bodies = self.node_id_to_rigid_body_handles.values().map(|handle| {
             self.physics_pipeline_parameters
                 .rigid_body_set
@@ -220,28 +220,25 @@ impl Simulation {
         let y_pos_iter = bodies.map(|body| body.translation().y);
 
         let x_min = x_pos_iter.clone().min_by(util::cmp_f32).unwrap();
+        let y_min = y_pos_iter.clone().min_by(util::cmp_f32).unwrap();
         let x_max = x_pos_iter.max_by(util::cmp_f32).unwrap();
-        let y_min = y_pos_iter.min_by(util::cmp_f32).unwrap();
+        let y_max = y_pos_iter.max_by(util::cmp_f32).unwrap();
 
-        Vector2::new((x_min + x_max) / 2.0, y_min)
+        (Vector2::new(x_min, y_min), Vector2::new(x_max, y_max))
+    }
+
+    /// Gets the lowest position to safely display text above
+    pub fn get_text_position(&self) -> Vector2<f32> {
+        let (top_left, bottom_right) = self.get_bounds();
+
+        Vector2::new((top_left.x + bottom_right.x) / 2.0, top_left.y)
     }
 
     /// Gets the score (furthest x distance) of this simulation
     pub fn get_score(&self) -> f32 {
-        let furthest_right = self
-            .node_id_to_rigid_body_handles
-            .values()
-            .map(|handle| {
-                self.physics_pipeline_parameters
-                    .rigid_body_set
-                    .get(*handle)
-                    .unwrap()
-            })
-            .map(|body| body.translation().x)
-            .max_by(util::cmp_f32)
-            .unwrap();
+        let (_, bottom_right) = self.get_bounds();
 
-        (furthest_right - (MAX_WORLD_X / 2.0)) * SCORE_SCALE_FACTOR
+        (bottom_right.x - (MAX_WORLD_X / 2.0)) * SCORE_SCALE_FACTOR
     }
 
     /// Steps the muscles one step forward in time
