@@ -9,20 +9,18 @@ use super::{Muscle, Node};
 
 type Range = RangeInclusive<i32>;
 
-const OFFSET_RANGE: Range = 0..=STEPS_PER_SECOND;
-
 const EXTENSION_PERIOD_RANGE: Range = STEPS_PER_SECOND / 4..=STEPS_PER_SECOND * 4;
 const CONTRACTION_PERIOD_RANGE: Range = STEPS_PER_SECOND / 4..=STEPS_PER_SECOND * 4;
 
 /// Represents a set of parameters for when and how a muscle should move, in steps
 pub struct MovementParameters {
     muscle_length: f32,
-    offset: i32,
     extension_period: i32,
     contraction_period: i32,
 }
 
 impl MovementParameters {
+    /// Generates for a set of muscles and nodes
     pub fn generate_for_muscles_and_nodes(
         muscles: &HashMap<Uuid, Muscle>,
         nodes: &HashMap<Uuid, Node>,
@@ -39,7 +37,6 @@ impl MovementParameters {
                 *id,
                 MovementParameters {
                     muscle_length,
-                    offset: rng.gen_range(OFFSET_RANGE),
 
                     extension_period: rng.gen_range(EXTENSION_PERIOD_RANGE),
                     contraction_period: rng.gen_range(CONTRACTION_PERIOD_RANGE),
@@ -59,11 +56,7 @@ impl MovementParameters {
     pub fn is_extending(&self, step: i32) -> bool {
         let total = self.extension_period + self.contraction_period;
 
-        if step < self.offset {
-            return false;
-        }
-
-        let step_delta = (step - self.offset) % total;
+        let step_delta = step % total;
 
         return step_delta < self.extension_period;
     }
@@ -75,16 +68,12 @@ impl MovementParameters {
     pub fn get_extension_at(&self, step: i32) -> f32 {
         let total = self.extension_period + self.contraction_period;
 
-        if step < self.offset {
-            return 0.5;
-        }
-
-        let mut step_delta = (step - self.offset) % total;
+        let mut step_delta = step % total;
 
         // Extension period
         if step_delta < self.extension_period {
             // First time, go from 0.5 to 1
-            if step < self.offset + total {
+            if step < total {
                 return (step_delta as f32 / self.extension_period as f32) * 0.5 + 0.5;
             }
 
