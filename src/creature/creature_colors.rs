@@ -1,5 +1,6 @@
 use egui::Color32;
 
+/// Represents the colors of a creature
 pub struct CreatureColors {
     pub node_color: Color32,
     pub muscle_extended: Color32,

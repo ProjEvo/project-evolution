@@ -1,3 +1,5 @@
+//! Stores generic util methods that don't really belong in a specific module
+
 const MAX_RGB: u8 = 255;
 
 /// Takes in hsv and outputs rgb, where:
