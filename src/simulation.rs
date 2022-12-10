@@ -17,6 +17,7 @@ pub const MAX_WORLD_Y: f32 = 560.0;
 pub const FLOOR_HEIGHT: f32 = MAX_WORLD_Y * 0.1;
 pub const FLOOR_TOP_Y: f32 = MAX_WORLD_Y - FLOOR_HEIGHT;
 const GRAVITY: f32 = 200.0;
+const SCORE_SCALE_FACTOR: f32 = 10.0 / MAX_WORLD_X;
 // Muscle extension and contraction range, where 0.0 is normal, -1.0 is maximum contraction, and 1.0 is double extension
 const MAX_MUSCLE_CONTRACTION: f32 = -0.5;
 const MAX_MUSCLE_EXTENSION: f32 = 0.5;
@@ -227,7 +228,8 @@ impl Simulation {
 
     /// Gets the score (furthest x distance) of this simulation
     pub fn get_score(&self) -> f32 {
-        self.node_id_to_rigid_body_handles
+        let furthest_right = self
+            .node_id_to_rigid_body_handles
             .values()
             .map(|handle| {
                 self.physics_pipeline_parameters
@@ -237,7 +239,9 @@ impl Simulation {
             })
             .map(|body| body.translation().x)
             .max_by(util::cmp_f32)
-            .unwrap()
+            .unwrap();
+
+        (furthest_right - (MAX_WORLD_X / 2.0)) * SCORE_SCALE_FACTOR
     }
 
     /// Steps the muscles one step forward in time
