@@ -22,7 +22,7 @@ use egui::{
 
 use crate::res;
 
-const SPEEDS: [f32; 9] = [0.0, 0.25, 0.5, 0.75, 1.0, 1.5, 2.0, 3.0, 5.0];
+const SPEEDS: [f32; 11] = [0.0, 0.25, 0.5, 0.75, 1.0, 1.5, 2.0, 3.0, 5.0, 7.5, 10.0];
 const DEFAULT_SPEED: usize = 4;
 const MIN_MUSCLE_THICKNESS: f32 = 1.5;
 const MAX_MUSCLE_THICKNESS: f32 = 3.0;
@@ -118,7 +118,7 @@ impl App {
         for (id, muscle) in creature.muscles() {
             let from_position = &simulation.get_position_of_node(muscle.from_id);
             let to_position = &simulation.get_position_of_node(muscle.to_id);
-            let extension_delta = simulation.get_extension_delta_of_muscle(*id);
+            let is_muscle_extending = simulation.is_muscle_extending(*id);
             let mut from = util::transform_position_from_world_to_screen_pos2(
                 from_position,
                 &self.screen_size,
@@ -146,7 +146,7 @@ impl App {
             let thickness = MIN_MUSCLE_THICKNESS
                 + ((1.0 - (thickness_delta - 0.5)) * (MAX_MUSCLE_THICKNESS - MIN_MUSCLE_THICKNESS));
 
-            let muscle_color = if extension_delta > 0.5 {
+            let muscle_color = if is_muscle_extending {
                 colors.muscle_extended()
             } else {
                 colors.muscle_contracted()

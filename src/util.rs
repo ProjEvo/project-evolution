@@ -1,7 +1,10 @@
 //! Stores generic util methods that don't really belong in a specific module
 
 use crate::simulation::{WORLD_X_SIZE, WORLD_Y_SIZE};
-use std::cmp::Ordering;
+use std::{
+    cmp::Ordering,
+    ops::{Bound, RangeBounds},
+};
 
 const MAX_RGB: u8 = 255;
 
@@ -70,6 +73,33 @@ pub fn transform_position_from_world_to_screen_pos2(
 /// When a or b is NAN
 pub fn cmp_f32(a: &f32, b: &f32) -> Ordering {
     a.partial_cmp(b).expect("NAN!")
+}
+
+/// Clamps a number to a range
+///
+/// # Panics
+/// - If NAN is involved
+/// - If the range isn't bounded on both sides
+pub fn clamp_to_range<T: PartialOrd<T> + Clone, R: RangeBounds<T>>(input: T, range: R) -> T {
+    match range.start_bound() {
+        Bound::Included(start) | Bound::Excluded(start) => {
+            if input.partial_cmp(start).expect("Cannot clamp NAN") == Ordering::Less {
+                return start.clone();
+            }
+        }
+        Bound::Unbounded => panic!("Must be bounded!"),
+    }
+
+    match range.end_bound() {
+        Bound::Included(end) | Bound::Excluded(end) => {
+            if input.partial_cmp(end).expect("Cannot clamp NAN") == Ordering::Greater {
+                return end.clone();
+            }
+        }
+        Bound::Unbounded => panic!("Must be bounded!"),
+    }
+
+    input
 }
 
 #[cfg(test)]

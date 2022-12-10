@@ -3,9 +3,11 @@ use egui::Color32;
 use rand::Rng;
 use std::ops::RangeInclusive;
 
-const COLOR_H_RANGE: RangeInclusive<u16> = 0..=350;
+const COLOR_HUE_RANGE: RangeInclusive<u16> = 0..=350;
+const MUTATE_COLOR_HUE_RANGE: RangeInclusive<i16> = -10..=10;
 
 /// Represents the colors of a creature
+#[derive(Debug, Clone, Copy)]
 pub struct CreatureColors {
     hue: u16,
     node: Color32,
@@ -19,7 +21,7 @@ impl CreatureColors {
     pub fn new() -> CreatureColors {
         let mut rng = rand::thread_rng();
 
-        let hue = rng.gen_range(COLOR_H_RANGE);
+        let hue = rng.gen_range(COLOR_HUE_RANGE);
 
         Self::from_hue(hue)
     }
@@ -38,6 +40,14 @@ impl CreatureColors {
             muscle_contracted: Color32::from_rgb(cr, cg, cb),
             score_text: Color32::from_rgb(sr, sg, sb),
         }
+    }
+
+    /// Creates a new [CreatureColors] that is a mutation of the one passed in
+    pub fn mutate(colors: &CreatureColors) -> CreatureColors {
+        let mut rng = rand::thread_rng();
+        let new_hue = (colors.hue() as i16 + rng.gen_range(MUTATE_COLOR_HUE_RANGE)) as u16 % 360;
+
+        CreatureColors::from_hue(new_hue)
     }
 
     /// The hue the colors were generated off of

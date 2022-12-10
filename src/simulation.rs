@@ -5,10 +5,7 @@ use std::{collections::HashMap, time::Duration};
 use rapier::{na::Vector2, prelude::*};
 use uuid::Uuid;
 
-use crate::{
-    creature::{Creature, MovementParameters},
-    util,
-};
+use crate::{creature::Creature, util};
 
 pub const STEPS_PER_SECOND: i32 = 60;
 pub const STEPS_FREQUENCY: Duration = Duration::from_nanos(1_000_000_000 / STEPS_PER_SECOND as u64);
@@ -32,7 +29,7 @@ pub struct Simulation {
     physics_pipeline_parameters: PhysicsPipelineParameters,
     creature: Creature,
     node_id_to_rigid_body_handles: HashMap<Uuid, RigidBodyHandle>,
-    joint_handles_to_movement_parameters: HashMap<ImpulseJointHandle, MovementParameters>,
+    joint_handles_to_muscle_ids: HashMap<ImpulseJointHandle, Uuid>,
     steps: i32,
 }
 
@@ -77,7 +74,7 @@ impl Simulation {
         let muscle_id_to_movement_parameters = creature.movement_parameters();
 
         let mut node_id_to_rigid_body_handles = HashMap::new();
-        let mut joint_handles_to_movement_parameters = HashMap::new();
+        let mut joint_handles_to_muscle_ids = HashMap::new();
 
         // Add node rigid bodies
         for node in nodes.values() {
@@ -105,7 +102,7 @@ impl Simulation {
             let to_node_position = &nodes.get(&muscle.to_id).unwrap().position;
             let from_node_body_handle = node_id_to_rigid_body_handles.get(&muscle.from_id).unwrap();
             let to_node_body_handle = node_id_to_rigid_body_handles.get(&muscle.to_id).unwrap();
-            let movement_parameters = muscle_id_to_movement_parameters.get(id).unwrap().clone();
+            let movement_parameters = muscle_id_to_movement_parameters.get(id).unwrap();
 
             let offset = point![
                 to_node_position.x - from_node_position.x,
@@ -170,7 +167,7 @@ impl Simulation {
             let joint_handle =
                 impulse_joint_set.insert(*from_node_body_handle, *to_node_body_handle, joint, true);
 
-            joint_handles_to_movement_parameters.insert(joint_handle, movement_parameters);
+            joint_handles_to_muscle_ids.insert(joint_handle, *id);
         }
 
         // Build simulation
@@ -181,7 +178,7 @@ impl Simulation {
             physics_pipeline_parameters,
             creature,
             node_id_to_rigid_body_handles,
-            joint_handles_to_movement_parameters,
+            joint_handles_to_muscle_ids,
             steps: 0,
         }
     }
@@ -202,12 +199,12 @@ impl Simulation {
     }
 
     /// Gets the extension delta of a node by it's id
-    pub fn get_extension_delta_of_muscle(&self, id: Uuid) -> f32 {
+    pub fn is_muscle_extending(&self, id: Uuid) -> bool {
         self.creature
             .movement_parameters()
             .get(&id)
             .unwrap()
-            .get_extension_at(self.steps)
+            .is_extending(self.steps)
     }
 
     /// Gets the bounds of the [Creature] in the form (top_left, bottom_right)
@@ -258,9 +255,9 @@ impl Simulation {
         let physics_parameters = &mut self.physics_pipeline_parameters;
 
         for (handle, joint) in physics_parameters.impulse_joint_set.iter_mut() {
-            if let Some(movement_parameters) =
-                self.joint_handles_to_movement_parameters.get(&handle)
-            {
+            if let Some(muscle_id) = self.joint_handles_to_muscle_ids.get(&handle) {
+                let movement_parameters =
+                    self.creature.movement_parameters().get(muscle_id).unwrap();
                 let muscle_length = movement_parameters.muscle_length();
 
                 let extension_delta = movement_parameters.get_extension_at(self.steps);
