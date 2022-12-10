@@ -204,6 +204,21 @@ impl Simulation {
             .get_extension_at(self.steps)
     }
 
+    /// Gets the score (furthest x distance) of this simulation
+    pub fn get_score(&self) -> f32 {
+        self.node_id_to_rigid_body_handles
+            .values()
+            .map(|handle| {
+                self.physics_pipeline_parameters
+                    .rigid_body_set
+                    .get(*handle)
+                    .unwrap()
+            })
+            .map(|body| body.translation().x)
+            .max_by(|a, b| a.partial_cmp(b).unwrap())
+            .unwrap()
+    }
+
     /// Steps the muscles one step forward in time
     fn step_muscles(&mut self) {
         let physics_parameters = &mut self.physics_pipeline_parameters;
