@@ -44,33 +44,15 @@ pub fn init() {
     );
 }
 
-/// Utility method to convert physics x to screen x
-fn transform_x_from_world_to_pos2(x: f32, available_size: Vec2) -> f32 {
-    let x_factor = available_size.x / MAX_WORLD_X;
+#[derive(Default)]
 
-    x * x_factor
-}
-
-/// Utility method to convert physics y to screen y
-fn transform_y_from_world_to_pos2(y: f32, available_size: Vec2) -> f32 {
-    let y_factor = available_size.y / MAX_WORLD_Y;
-
-    y * y_factor
-}
-
-/// Utility method to convert physics coordinates to where they should be on the screen
-fn transform_position_from_world_to_pos2(
-    position: &rapier::prelude::Vector<f32>,
-    available_size: Vec2,
-) -> Pos2 {
-    Pos2 {
-        x: transform_x_from_world_to_pos2(position.x, available_size),
-        y: transform_y_from_world_to_pos2(position.y, available_size),
-    }
-}
-
-fn distance(a: &rapier::prelude::Vector<f32>, b: &rapier::prelude::Vector<f32>) -> f32 {
-    f32::sqrt(f32::powi(a.x - b.x, 2) + f32::powi(a.y - b.y, 2))
+/// Creates new egui ui struct used to populate objects into new Window
+struct App {
+    evolver: Evolver,
+    last_frame: Option<Instant>,
+    speed_setting: usize,
+    screen_size: Vec2,
+    offset_x: f32,
 }
 
 /// Utility method to paint text at a position
@@ -94,159 +76,6 @@ fn paint_text(text: String, position: Pos2, size: f32, color: Color32, painter: 
     painter.add(text);
 }
 
-/// Paints a [Simulation] using the provided [Painter]
-fn paint_simulation(
-    simulation: &Simulation,
-    painter: &Painter,
-    available_size: Vec2,
-    offset_x: f32,
-) {
-    let creature = simulation.creature();
-    let colors = creature.colors();
-    let movement_parameters = creature.movement_parameters();
-
-    // Paint muscles
-    for (id, muscle) in creature.muscles() {
-        let from_position = &simulation.get_position_of_node(muscle.from_id);
-        let to_position = &simulation.get_position_of_node(muscle.to_id);
-        let extension_delta = simulation.get_extension_delta_of_muscle(*id);
-        let mut from = transform_position_from_world_to_pos2(from_position, available_size);
-        let mut to = transform_position_from_world_to_pos2(to_position, available_size);
-
-        from.x += offset_x;
-        to.x += offset_x;
-
-        let muscle_movement_parameters = movement_parameters.get(id).unwrap();
-        let normal_length = muscle_movement_parameters.muscle_length();
-        let current_length = distance(from_position, to_position);
-
-        let mut thickness_delta = current_length / normal_length;
-
-        if thickness_delta < 0.5 {
-            thickness_delta = 0.5;
-        }
-
-        if thickness_delta > 1.5 {
-            thickness_delta = 1.5;
-        }
-
-        let thickness = MIN_MUSCLE_THICKNESS
-            + ((1.0 - (thickness_delta - 0.5)) * (MAX_MUSCLE_THICKNESS - MIN_MUSCLE_THICKNESS));
-
-        let muscle_color = if extension_delta > 0.5 {
-            colors.muscle_extended()
-        } else {
-            colors.muscle_contracted()
-        };
-
-        let line = egui::Shape::line(
-            vec![from, to],
-            Stroke::from((
-                transform_x_from_world_to_pos2(thickness, available_size),
-                muscle_color,
-            )),
-        );
-
-        painter.add(line);
-    }
-
-    // Paint nodes
-    for (id, node) in creature.nodes() {
-        let position = simulation.get_position_of_node(*id);
-        let mut pos2 = transform_position_from_world_to_pos2(&position, available_size);
-
-        pos2.x += offset_x;
-
-        let circle = CircleShape {
-            center: pos2,
-            radius: transform_x_from_world_to_pos2(node.size / 2.0, available_size),
-            fill: colors.node(),
-            stroke: Stroke::none(),
-        };
-
-        painter.add(circle);
-    }
-
-    // Paint distance
-    {
-        let score = simulation.get_score();
-        let mut position = simulation.get_text_position();
-
-        position.y -= CREATURE_SCORE_TEXT_SIZE;
-
-        let mut pos2 = transform_position_from_world_to_pos2(&position, available_size);
-
-        pos2.x += offset_x;
-
-        paint_text(
-            format!("{:.2}m", score),
-            pos2,
-            CREATURE_SCORE_TEXT_SIZE,
-            colors.score_text(),
-            painter,
-        );
-    }
-}
-
-/// Paints a generation using the provided [Painter]
-fn paint_generation(generation: &Vec<Simulation>, painter: &Painter, available_size: Vec2) {
-    let offset_x = (MAX_WORLD_X * (2.0 / 3.0))
-        - generation
-            .iter()
-            .map(|simulation| simulation.get_bounds().1.x)
-            .max_by(util::cmp_f32)
-            .unwrap();
-
-    for simulation in generation {
-        paint_simulation(simulation, painter, available_size, offset_x);
-    }
-}
-
-/// Paints the scenery using the provided [Painter]
-fn paint_scenery(painter: &Painter, available_size: Vec2) {
-    let sky = RectShape {
-        rect: Rect {
-            min: Pos2::new(0.0, 0.0),
-            max: Pos2::new(
-                transform_x_from_world_to_pos2(MAX_WORLD_X, available_size),
-                transform_y_from_world_to_pos2(MAX_WORLD_Y, available_size),
-            ),
-        },
-        rounding: Rounding::none(),
-        fill: Color32::from_rgb(122, 233, 255),
-        stroke: Stroke::none(),
-    };
-
-    painter.add(sky);
-
-    let floor = RectShape {
-        rect: Rect {
-            min: Pos2::new(
-                0.0,
-                transform_y_from_world_to_pos2(FLOOR_TOP_Y, available_size),
-            ),
-            max: Pos2::new(
-                transform_x_from_world_to_pos2(MAX_WORLD_X, available_size),
-                transform_y_from_world_to_pos2(MAX_WORLD_Y, available_size),
-            ),
-        },
-        rounding: Rounding::none(),
-        fill: Color32::from_rgb(75, 200, 75),
-        stroke: Stroke::none(),
-    };
-
-    painter.add(floor);
-}
-
-#[derive(Default)]
-
-/// Creates new egui ui struct used to populate objects into new Window
-struct App {
-    evolver: Evolver,
-    last_frame: Option<Instant>,
-    speed_setting: usize,
-}
-
 impl App {
     /// Initializes the egui app
     fn new(_cc: &eframe::CreationContext<'_>) -> Self {
@@ -261,14 +90,156 @@ impl App {
         }
     }
 
+    /// Paints a [Simulation] using the provided [Painter]
+    fn paint_simulation(&self, simulation: &Simulation, painter: &Painter) {
+        let creature = simulation.creature();
+        let colors = creature.colors();
+        let movement_parameters = creature.movement_parameters();
+
+        // Paint muscles
+        for (id, muscle) in creature.muscles() {
+            let from_position = &simulation.get_position_of_node(muscle.from_id);
+            let to_position = &simulation.get_position_of_node(muscle.to_id);
+            let extension_delta = simulation.get_extension_delta_of_muscle(*id);
+            let mut from = util::transform_position_from_world_to_screen_pos2(
+                from_position,
+                &self.screen_size,
+            );
+            let mut to =
+                util::transform_position_from_world_to_screen_pos2(to_position, &self.screen_size);
+
+            from.x += self.offset_x;
+            to.x += self.offset_x;
+
+            let muscle_movement_parameters = movement_parameters.get(id).unwrap();
+            let normal_length = muscle_movement_parameters.muscle_length();
+            let current_length = util::distance(from_position, to_position);
+
+            let mut thickness_delta = current_length / normal_length;
+
+            if thickness_delta < 0.5 {
+                thickness_delta = 0.5;
+            }
+
+            if thickness_delta > 1.5 {
+                thickness_delta = 1.5;
+            }
+
+            let thickness = MIN_MUSCLE_THICKNESS
+                + ((1.0 - (thickness_delta - 0.5)) * (MAX_MUSCLE_THICKNESS - MIN_MUSCLE_THICKNESS));
+
+            let muscle_color = if extension_delta > 0.5 {
+                colors.muscle_extended()
+            } else {
+                colors.muscle_contracted()
+            };
+
+            let line = egui::Shape::line(
+                vec![from, to],
+                Stroke::from((
+                    util::transform_x_from_world_to_screen(thickness, &self.screen_size),
+                    muscle_color,
+                )),
+            );
+
+            painter.add(line);
+        }
+
+        // Paint nodes
+        for (id, node) in creature.nodes() {
+            let position = simulation.get_position_of_node(*id);
+            let mut pos2 =
+                util::transform_position_from_world_to_screen_pos2(&position, &self.screen_size);
+
+            pos2.x += self.offset_x;
+
+            let circle = CircleShape {
+                center: pos2,
+                radius: util::transform_x_from_world_to_screen(node.size / 2.0, &self.screen_size),
+                fill: colors.node(),
+                stroke: Stroke::none(),
+            };
+
+            painter.add(circle);
+        }
+
+        // Paint distance
+        {
+            let score = simulation.get_score();
+            let mut position = simulation.get_text_position();
+
+            position.y -= CREATURE_SCORE_TEXT_SIZE;
+
+            let mut pos2 =
+                util::transform_position_from_world_to_screen_pos2(&position, &self.screen_size);
+
+            pos2.x += self.offset_x;
+
+            paint_text(
+                format!("{:.2}m", score),
+                pos2,
+                CREATURE_SCORE_TEXT_SIZE,
+                colors.score_text(),
+                painter,
+            );
+        }
+    }
+
+    /// Paints a generation using the provided [Painter]
+    fn paint_generation(&self, generation: &Vec<Simulation>, painter: &Painter) {
+        for simulation in generation {
+            self.paint_simulation(simulation, painter);
+        }
+    }
+
+    /// Paints the scenery using the provided [Painter]
+    fn paint_scenery(&self, painter: &Painter) {
+        let sky = RectShape {
+            rect: Rect {
+                min: Pos2::new(0.0, 0.0),
+                max: Pos2::new(
+                    util::transform_x_from_world_to_screen(MAX_WORLD_X, &self.screen_size),
+                    util::transform_y_from_world_to_screen(MAX_WORLD_Y, &self.screen_size),
+                ),
+            },
+            rounding: Rounding::none(),
+            fill: Color32::from_rgb(122, 233, 255),
+            stroke: Stroke::none(),
+        };
+
+        painter.add(sky);
+
+        let floor = RectShape {
+            rect: Rect {
+                min: Pos2::new(
+                    0.0,
+                    util::transform_y_from_world_to_screen(FLOOR_TOP_Y, &self.screen_size),
+                ),
+                max: Pos2::new(
+                    util::transform_x_from_world_to_screen(MAX_WORLD_X, &self.screen_size),
+                    util::transform_y_from_world_to_screen(MAX_WORLD_Y, &self.screen_size),
+                ),
+            },
+            rounding: Rounding::none(),
+            fill: Color32::from_rgb(75, 200, 75),
+            stroke: Stroke::none(),
+        };
+
+        painter.add(floor);
+    }
+
     /// Renders the scene
-    fn render(&self, painter: &Painter, available_size: Vec2) {
-        paint_scenery(painter, available_size);
-        paint_generation(
-            self.evolver.get_current_generation(),
-            painter,
-            available_size,
-        );
+    fn render(&mut self, painter: &Painter) {
+        let generation = self.evolver.get_current_generation();
+        self.offset_x = (MAX_WORLD_X * (2.0 / 3.0))
+            - generation
+                .iter()
+                .map(|simulation| simulation.get_bounds().1.x)
+                .max_by(util::cmp_f32)
+                .unwrap();
+
+        self.paint_scenery(painter);
+        self.paint_generation(generation, painter);
     }
 }
 
@@ -288,13 +259,14 @@ impl eframe::App for App {
         egui::CentralPanel::default()
             .frame(central_frame)
             .show(ctx, |ui| {
-                let total_size = ui.available_size();
+                self.screen_size = ui.available_size();
+
                 let now = Instant::now();
 
                 if let Some(last_frame) = self.last_frame {
                     self.evolver.run(now.duration_since(last_frame).mul_f32(SPEEDS[self.speed_setting]));
 
-                    self.render(ui.painter(), total_size);
+                    self.render(ui.painter());
                 }
 
                 self.last_frame = Some(now);

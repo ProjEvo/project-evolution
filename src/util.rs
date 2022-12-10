@@ -1,5 +1,6 @@
 //! Stores generic util methods that don't really belong in a specific module
 
+use crate::simulation::{MAX_WORLD_X, MAX_WORLD_Y};
 use std::cmp::Ordering;
 
 const MAX_RGB: u8 = 255;
@@ -30,6 +31,36 @@ pub fn hsv_to_rgb(h: u16, s: u8, v: u8) -> (u8, u8, u8) {
         3 => (p, q, rv),
         4 => (t, p, rv),
         _ => (rv, p, q),
+    }
+}
+
+/// Gets the distance between two vectors
+pub fn distance(a: &rapier::prelude::Vector<f32>, b: &rapier::prelude::Vector<f32>) -> f32 {
+    f32::sqrt(f32::powi(a.x - b.x, 2) + f32::powi(a.y - b.y, 2))
+}
+
+/// Converts world x to screen x
+pub fn transform_x_from_world_to_screen(x: f32, screen_size: &egui::Vec2) -> f32 {
+    let x_factor = screen_size.x / MAX_WORLD_X;
+
+    x * x_factor
+}
+
+/// Converts world y to screen y
+pub fn transform_y_from_world_to_screen(y: f32, screen_size: &egui::Vec2) -> f32 {
+    let y_factor = screen_size.y / MAX_WORLD_Y;
+
+    y * y_factor
+}
+
+/// Converts physics coordinates to screen coordinates
+pub fn transform_position_from_world_to_screen_pos2(
+    position: &rapier::prelude::Vector<f32>,
+    screen_size: &egui::Vec2,
+) -> egui::Pos2 {
+    egui::Pos2 {
+        x: transform_x_from_world_to_screen(position.x, screen_size),
+        y: transform_y_from_world_to_screen(position.y, screen_size),
     }
 }
 
