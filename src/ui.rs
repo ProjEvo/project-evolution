@@ -5,6 +5,7 @@ use std::time::Instant;
 use crate::{
     evolver::{Evolver, EvolverState},
     simulation::{Simulation, FLOOR_TOP_Y, MAX_WORLD_X, MAX_WORLD_Y, STEPS_PER_SECOND},
+    util,
 };
 use eframe::{
     egui,
@@ -94,7 +95,12 @@ fn paint_text(text: String, position: Pos2, size: f32, color: Color32, painter: 
 }
 
 /// Paints a [Simulation] using the provided [Painter]
-fn paint_simulation(simulation: &Simulation, painter: &Painter, available_size: Vec2) {
+fn paint_simulation(
+    simulation: &Simulation,
+    painter: &Painter,
+    available_size: Vec2,
+    offset_x: f32,
+) {
     let creature = simulation.creature();
     let colors = creature.colors();
     let movement_parameters = creature.movement_parameters();
@@ -104,8 +110,11 @@ fn paint_simulation(simulation: &Simulation, painter: &Painter, available_size: 
         let from_position = &simulation.get_position_of_node(muscle.from_id);
         let to_position = &simulation.get_position_of_node(muscle.to_id);
         let extension_delta = simulation.get_extension_delta_of_muscle(*id);
-        let from = transform_position_from_world_to_pos2(from_position, available_size);
-        let to = transform_position_from_world_to_pos2(to_position, available_size);
+        let mut from = transform_position_from_world_to_pos2(from_position, available_size);
+        let mut to = transform_position_from_world_to_pos2(to_position, available_size);
+
+        from.x += offset_x;
+        to.x += offset_x;
 
         let muscle_movement_parameters = movement_parameters.get(id).unwrap();
         let normal_length = muscle_movement_parameters.muscle_length();
@@ -144,9 +153,12 @@ fn paint_simulation(simulation: &Simulation, painter: &Painter, available_size: 
     // Paint nodes
     for (id, node) in creature.nodes() {
         let position = simulation.get_position_of_node(*id);
+        let mut pos2 = transform_position_from_world_to_pos2(&position, available_size);
+
+        pos2.x += offset_x;
 
         let circle = CircleShape {
-            center: transform_position_from_world_to_pos2(&position, available_size),
+            center: pos2,
             radius: transform_x_from_world_to_pos2(node.size / 2.0, available_size),
             fill: colors.node(),
             stroke: Stroke::none(),
@@ -162,9 +174,13 @@ fn paint_simulation(simulation: &Simulation, painter: &Painter, available_size: 
 
         position.y -= CREATURE_SCORE_TEXT_SIZE;
 
+        let mut pos2 = transform_position_from_world_to_pos2(&position, available_size);
+
+        pos2.x += offset_x;
+
         paint_text(
             format!("{:.2}m", score),
-            transform_position_from_world_to_pos2(&position, available_size),
+            pos2,
             CREATURE_SCORE_TEXT_SIZE,
             colors.score_text(),
             painter,
@@ -174,8 +190,15 @@ fn paint_simulation(simulation: &Simulation, painter: &Painter, available_size: 
 
 /// Paints a generation using the provided [Painter]
 fn paint_generation(generation: &Vec<Simulation>, painter: &Painter, available_size: Vec2) {
+    let offset_x = (MAX_WORLD_X * (2.0 / 3.0))
+        - generation
+            .iter()
+            .map(|simulation| simulation.get_bounds().1.x)
+            .max_by(util::cmp_f32)
+            .unwrap();
+
     for simulation in generation {
-        paint_simulation(simulation, painter, available_size)
+        paint_simulation(simulation, painter, available_size, offset_x);
     }
 }
 
