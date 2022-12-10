@@ -1,10 +1,13 @@
 //! Manages the UI
 
-use std::time::Instant;
+use std::{ops::RangeInclusive, time::Instant};
 
 use crate::{
     evolver::{Evolver, EvolverState},
-    simulation::{Simulation, FLOOR_TOP_Y, MAX_WORLD_X, MAX_WORLD_Y, STEPS_PER_SECOND},
+    simulation::{
+        Simulation, FLOOR_HEIGHT, FLOOR_TOP_Y, SCORE_PER_SCREEN, STEPS_PER_SECOND, WORLD_X_SIZE,
+        WORLD_Y_SIZE,
+    },
     util,
 };
 use eframe::{
@@ -23,8 +26,11 @@ const SPEEDS: [f32; 9] = [0.0, 0.25, 0.5, 0.75, 1.0, 1.5, 2.0, 3.0, 5.0];
 const DEFAULT_SPEED: usize = 4;
 const MIN_MUSCLE_THICKNESS: f32 = 1.5;
 const MAX_MUSCLE_THICKNESS: f32 = 3.0;
-const TEXT_COLOR: Color32 = Color32::WHITE;
+const DISTANCE_LINE_THICKNESS: f32 = 5.0;
+const WHITE: Color32 = Color32::WHITE;
+const TEXT_COLOR: Color32 = WHITE;
 const CREATURE_SCORE_TEXT_SIZE: f32 = 20.0;
+const SCORE_LINE_TEXT_SIZE: f32 = 30.0;
 
 /// Initializes the UI
 pub fn init() {
@@ -52,11 +58,19 @@ struct App {
     last_frame: Option<Instant>,
     speed_setting: usize,
     screen_size: Vec2,
-    offset_x: f32,
+    screen_offset_x: f32,
+    max_x: f32,
 }
 
 /// Utility method to paint text at a position
-fn paint_text(text: String, position: Pos2, size: f32, color: Color32, painter: &Painter) {
+fn paint_text(
+    text: String,
+    mut position: Pos2,
+    size: f32,
+    color: Color32,
+    center_x: bool,
+    painter: &Painter,
+) {
     let mut job = LayoutJob::default();
 
     job.append(
@@ -70,6 +84,10 @@ fn paint_text(text: String, position: Pos2, size: f32, color: Color32, painter: 
     );
 
     let galley = painter.ctx().fonts().layout_job(job);
+
+    if center_x {
+        position.x -= galley.rect.width() / 2.0;
+    }
 
     let text = TextShape::new(position, galley);
 
@@ -108,8 +126,8 @@ impl App {
             let mut to =
                 util::transform_position_from_world_to_screen_pos2(to_position, &self.screen_size);
 
-            from.x += self.offset_x;
-            to.x += self.offset_x;
+            from.x += self.screen_offset_x;
+            to.x += self.screen_offset_x;
 
             let muscle_movement_parameters = movement_parameters.get(id).unwrap();
             let normal_length = muscle_movement_parameters.muscle_length();
@@ -151,7 +169,7 @@ impl App {
             let mut pos2 =
                 util::transform_position_from_world_to_screen_pos2(&position, &self.screen_size);
 
-            pos2.x += self.offset_x;
+            pos2.x += self.screen_offset_x;
 
             let circle = CircleShape {
                 center: pos2,
@@ -163,23 +181,22 @@ impl App {
             painter.add(circle);
         }
 
-        // Paint distance
+        // Paint score
         {
             let score = simulation.get_score();
-            let mut position = simulation.get_text_position();
-
-            position.y -= CREATURE_SCORE_TEXT_SIZE;
-
+            let position = simulation.get_text_position();
             let mut pos2 =
                 util::transform_position_from_world_to_screen_pos2(&position, &self.screen_size);
 
-            pos2.x += self.offset_x;
+            pos2.x += self.screen_offset_x;
+            pos2.y -= CREATURE_SCORE_TEXT_SIZE;
 
             paint_text(
                 format!("{:.2}m", score),
                 pos2,
                 CREATURE_SCORE_TEXT_SIZE,
                 colors.score_text(),
+                true,
                 painter,
             );
         }
@@ -194,12 +211,13 @@ impl App {
 
     /// Paints the scenery using the provided [Painter]
     fn paint_scenery(&self, painter: &Painter) {
+        // Add sky
         let sky = RectShape {
             rect: Rect {
                 min: Pos2::new(0.0, 0.0),
                 max: Pos2::new(
-                    util::transform_x_from_world_to_screen(MAX_WORLD_X, &self.screen_size),
-                    util::transform_y_from_world_to_screen(MAX_WORLD_Y, &self.screen_size),
+                    util::transform_x_from_world_to_screen(WORLD_X_SIZE, &self.screen_size),
+                    util::transform_y_from_world_to_screen(WORLD_Y_SIZE, &self.screen_size),
                 ),
             },
             rounding: Rounding::none(),
@@ -209,15 +227,16 @@ impl App {
 
         painter.add(sky);
 
-        let floor = RectShape {
+        // Add ground
+        let ground = RectShape {
             rect: Rect {
                 min: Pos2::new(
                     0.0,
                     util::transform_y_from_world_to_screen(FLOOR_TOP_Y, &self.screen_size),
                 ),
                 max: Pos2::new(
-                    util::transform_x_from_world_to_screen(MAX_WORLD_X, &self.screen_size),
-                    util::transform_y_from_world_to_screen(MAX_WORLD_Y, &self.screen_size),
+                    util::transform_x_from_world_to_screen(WORLD_X_SIZE, &self.screen_size),
+                    util::transform_y_from_world_to_screen(WORLD_Y_SIZE, &self.screen_size),
                 ),
             },
             rounding: Rounding::none(),
@@ -225,19 +244,85 @@ impl App {
             stroke: Stroke::none(),
         };
 
-        painter.add(floor);
+        painter.add(ground);
+
+        // Add score lines
+        let middle_score = Simulation::x_to_score(f32::floor(self.max_x)) as i32;
+        // Intentionally extend range extra to cover edges
+        let score_range = RangeInclusive::new(
+            middle_score - (SCORE_PER_SCREEN),
+            middle_score + (SCORE_PER_SCREEN),
+        );
+
+        for score in score_range {
+            let mut height_scale = 0.25;
+            let minor = score % (SCORE_PER_SCREEN / 2) == 0;
+            let major = score % SCORE_PER_SCREEN == 0;
+
+            if major {
+                height_scale = 2.0 / 3.0;
+            } else if minor {
+                height_scale = 1.0 / 3.0;
+            }
+
+            let x = Simulation::score_to_x(score as f32);
+            let y = FLOOR_TOP_Y + (FLOOR_HEIGHT * height_scale);
+
+            let line = RectShape {
+                rect: Rect {
+                    min: Pos2::new(
+                        util::transform_x_from_world_to_screen(
+                            x - (DISTANCE_LINE_THICKNESS / 2.0),
+                            &self.screen_size,
+                        ) + self.screen_offset_x,
+                        util::transform_y_from_world_to_screen(FLOOR_TOP_Y, &self.screen_size),
+                    ),
+                    max: Pos2::new(
+                        util::transform_x_from_world_to_screen(
+                            x + (DISTANCE_LINE_THICKNESS / 2.0),
+                            &self.screen_size,
+                        ) + self.screen_offset_x,
+                        util::transform_y_from_world_to_screen(y, &self.screen_size),
+                    ),
+                },
+                rounding: Rounding::none(),
+                fill: WHITE,
+                stroke: Stroke::none(),
+            };
+
+            painter.add(line);
+
+            if minor || major {
+                let pos = Pos2::new(
+                    util::transform_x_from_world_to_screen(x, &self.screen_size)
+                        + self.screen_offset_x,
+                    util::transform_y_from_world_to_screen(y, &self.screen_size),
+                );
+
+                paint_text(
+                    format!("{:.2}m", score),
+                    pos,
+                    SCORE_LINE_TEXT_SIZE,
+                    WHITE,
+                    true,
+                    painter,
+                );
+            }
+        }
     }
 
     /// Renders the scene
     fn render(&mut self, painter: &Painter) {
         let generation = self.evolver.get_current_generation();
-        self.offset_x = (MAX_WORLD_X * (2.0 / 3.0))
-            - generation
-                .iter()
-                .map(|simulation| simulation.get_bounds().1.x)
-                .max_by(util::cmp_f32)
-                .unwrap();
-
+        self.max_x = generation
+            .iter()
+            .map(|simulation| simulation.get_bounds().1.x)
+            .max_by(util::cmp_f32)
+            .unwrap();
+        self.screen_offset_x = util::transform_x_from_world_to_screen(
+            (WORLD_X_SIZE * (2.0 / 3.0)) - self.max_x,
+            &self.screen_size,
+        );
         self.paint_scenery(painter);
         self.paint_generation(generation, painter);
     }

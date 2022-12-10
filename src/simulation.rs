@@ -12,12 +12,14 @@ use crate::{
 
 pub const STEPS_PER_SECOND: i32 = 60;
 pub const STEPS_FREQUENCY: Duration = Duration::from_nanos(1_000_000_000 / STEPS_PER_SECOND as u64);
-pub const MAX_WORLD_X: f32 = 1000.0;
-pub const MAX_WORLD_Y: f32 = 560.0;
-pub const FLOOR_HEIGHT: f32 = MAX_WORLD_Y * 0.1;
-pub const FLOOR_TOP_Y: f32 = MAX_WORLD_Y - FLOOR_HEIGHT;
+pub const WORLD_X_SIZE: f32 = 1000.0;
+pub const WORLD_Y_SIZE: f32 = 560.0;
+pub const FLOOR_HEIGHT: f32 = WORLD_Y_SIZE * 0.1;
+pub const FLOOR_TOP_Y: f32 = WORLD_Y_SIZE - FLOOR_HEIGHT;
+pub const SCORE_PER_SCREEN: i32 = 10; // The score range displayed on the screen (x segments)
+
 const GRAVITY: f32 = 200.0;
-const SCORE_SCALE_FACTOR: f32 = 10.0 / MAX_WORLD_X;
+const SCORE_SCALE_FACTOR: f32 = SCORE_PER_SCREEN as f32 / WORLD_X_SIZE;
 // Muscle extension and contraction range, where 0.0 is normal, -1.0 is maximum contraction, and 1.0 is double extension
 const MAX_MUSCLE_CONTRACTION: f32 = -0.5;
 const MAX_MUSCLE_EXTENSION: f32 = 0.5;
@@ -56,7 +58,7 @@ impl Simulation {
 
         // Add floor
         let floor = RigidBodyBuilder::fixed()
-            .translation(vector![0.0, MAX_WORLD_Y])
+            .translation(vector![0.0, WORLD_Y_SIZE])
             .build();
         let floor_handle = rigid_body_set.insert(floor);
 
@@ -234,11 +236,21 @@ impl Simulation {
         Vector2::new((top_left.x + bottom_right.x) / 2.0, top_left.y)
     }
 
+    /// Converts a x position to a score
+    pub fn x_to_score(x: f32) -> f32 {
+        (x - (WORLD_X_SIZE / 2.0)) * SCORE_SCALE_FACTOR
+    }
+
+    /// Converts a score to a x position
+    pub fn score_to_x(score: f32) -> f32 {
+        (score / SCORE_SCALE_FACTOR) + (WORLD_X_SIZE / 2.0)
+    }
+
     /// Gets the score (furthest x distance) of this simulation
     pub fn get_score(&self) -> f32 {
         let (_, bottom_right) = self.get_bounds();
 
-        (bottom_right.x - (MAX_WORLD_X / 2.0)) * SCORE_SCALE_FACTOR
+        Self::x_to_score(bottom_right.x)
     }
 
     /// Steps the muscles one step forward in time

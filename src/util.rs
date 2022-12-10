@@ -1,6 +1,6 @@
 //! Stores generic util methods that don't really belong in a specific module
 
-use crate::simulation::{MAX_WORLD_X, MAX_WORLD_Y};
+use crate::simulation::{WORLD_X_SIZE, WORLD_Y_SIZE};
 use std::cmp::Ordering;
 
 const MAX_RGB: u8 = 255;
@@ -41,14 +41,14 @@ pub fn distance(a: &rapier::prelude::Vector<f32>, b: &rapier::prelude::Vector<f3
 
 /// Converts world x to screen x
 pub fn transform_x_from_world_to_screen(x: f32, screen_size: &egui::Vec2) -> f32 {
-    let x_factor = screen_size.x / MAX_WORLD_X;
+    let x_factor = screen_size.x / WORLD_X_SIZE;
 
     x * x_factor
 }
 
 /// Converts world y to screen y
 pub fn transform_y_from_world_to_screen(y: f32, screen_size: &egui::Vec2) -> f32 {
-    let y_factor = screen_size.y / MAX_WORLD_Y;
+    let y_factor = screen_size.y / WORLD_Y_SIZE;
 
     y * y_factor
 }
