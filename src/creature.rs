@@ -187,24 +187,10 @@ impl CreatureBuilder {
     ///
     /// Translating to a point P would put C there
     pub fn translate_bottom_center_to(self, position: Position) -> CreatureBuilder {
-        let mut total_nodes: f32 = 0.0;
-        let mut x_sum: f32 = 0.0;
-        let mut y_max: f32 = f32::MIN;
+        let (top_left, bottom_right) = self.get_bounds();
 
-        for node in self.nodes.values() {
-            total_nodes += 1.0;
-
-            x_sum += node.position.x;
-
-            let this_y_max = node.position.y + (node.size / 2.0);
-
-            if this_y_max > y_max {
-                y_max = this_y_max
-            }
-        }
-
-        let translate_x = position.x - (x_sum / total_nodes);
-        let translate_y = position.y - y_max;
+        let translate_x = position.x - ((top_left.x + bottom_right.x) / 2.0);
+        let translate_y = position.y - bottom_right.y;
 
         self.translate(translate_x, translate_y)
     }
