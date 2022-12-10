@@ -15,7 +15,6 @@ pub use position::Position;
 
 use std::{collections::HashMap, ops::RangeInclusive};
 
-use egui::Color32;
 use rand::Rng;
 use uuid::{self, Uuid};
 
@@ -27,7 +26,6 @@ const RANDOM_NODE_X_POSITION_RANGE: RangeInclusive<f32> = -100.0..=100.0;
 const RANDOM_NODE_Y_POSITION_RANGE: RangeInclusive<f32> = -100.0..=100.0;
 const RANDOM_NODE_SIZE_RANGE: RangeInclusive<f32> = 10.0..=20.0;
 const RANDOM_CHANGE_TO_CONNECT_NODES: f32 = 0.75;
-const COLOR_H_RANGE: RangeInclusive<u16> = 0..=300;
 
 /// A creature, made up of [Node]s and [Muscle]s. Contains a unique id for reference. Built using a [CreatureBuilder].
 pub struct Creature {
@@ -197,23 +195,10 @@ impl CreatureBuilder {
 
     /// Builds the [CreatureBuilder] into a [Creature]
     pub fn build(self) -> Creature {
-        let mut rng = rand::thread_rng();
-
         let movement_parameters =
             MovementParameters::generate_for_muscles_and_nodes(&self.muscles, &self.nodes);
 
-        let h = rng.gen_range(COLOR_H_RANGE);
-        let (nr, ng, nb) = util::hsv_to_rgb(h, 75, 100);
-        let (er, eg, eb) = util::hsv_to_rgb(h, 75, 75);
-        let (cr, cg, cb) = util::hsv_to_rgb(h, 75, 50);
-        let (sr, sg, sb) = util::hsv_to_rgb(h, 75, 95);
-
-        let colors = CreatureColors {
-            node: Color32::from_rgb(nr, ng, nb),
-            muscle_extended: Color32::from_rgb(er, eg, eb),
-            muscle_contracted: Color32::from_rgb(cr, cg, cb),
-            score_text: Color32::from_rgb(sr, sg, sb),
-        };
+        let colors = CreatureColors::new();
 
         Creature {
             id: self.id,

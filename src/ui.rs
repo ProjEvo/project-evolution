@@ -125,9 +125,9 @@ fn paint_simulation(simulation: &Simulation, painter: &Painter, available_size: 
             + ((1.0 - (thickness_delta - 0.5)) * (MAX_MUSCLE_THICKNESS - MIN_MUSCLE_THICKNESS));
 
         let muscle_color = if extension_delta > 0.5 {
-            colors.muscle_extended
+            colors.muscle_extended()
         } else {
-            colors.muscle_contracted
+            colors.muscle_contracted()
         };
 
         let line = egui::Shape::line(
@@ -148,7 +148,7 @@ fn paint_simulation(simulation: &Simulation, painter: &Painter, available_size: 
         let circle = CircleShape {
             center: transform_position_from_world_to_pos2(&position, available_size),
             radius: transform_x_from_world_to_pos2(node.size / 2.0, available_size),
-            fill: colors.node,
+            fill: colors.node(),
             stroke: Stroke::none(),
         };
 
@@ -166,7 +166,7 @@ fn paint_simulation(simulation: &Simulation, painter: &Painter, available_size: 
             format!("{:.2}m", score),
             transform_position_from_world_to_pos2(&position, available_size),
             CREATURE_SCORE_TEXT_SIZE,
-            colors.score_text,
+            colors.score_text(),
             painter,
         );
     }
