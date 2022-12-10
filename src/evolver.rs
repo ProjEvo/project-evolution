@@ -38,27 +38,27 @@ impl Evolver {
     }
 
     fn generate_next_generation(&mut self) {
-        // if self.generations.is_empty() {
-        // Create first generation
-        let mut generation = Vec::new();
+        if self.generations.is_empty() {
+            // Create first generation
+            let mut generation = Vec::new();
 
-        for _ in 0..SIMULATIONS_PER_GENERATION {
-            generation.push(Simulation::new(
-                CreatureBuilder::random()
-                    .translate_bottom_center_to(Position::new(MAX_WORLD_X / 2.0, FLOOR_TOP_Y))
-                    .build(),
-            ))
+            for _ in 0..SIMULATIONS_PER_GENERATION {
+                generation.push(Simulation::new(
+                    CreatureBuilder::random()
+                        .translate_bottom_center_to(Position::new(MAX_WORLD_X / 2.0, FLOOR_TOP_Y))
+                        .build(),
+                ))
+            }
+
+            self.generations.push(generation);
+
+            return;
         }
 
-        self.generations.push(generation);
-
-        // return;
-        // }
-
         // Otherwise, improve last generation
-        // let generation = self.get_current_generation();
+        let generation = self.get_current_generation();
 
-        // println!("Need to improve generation of size {}", generation.len())
+        panic!("Need to improve generation of size {}", generation.len())
     }
 
     pub fn get_current_generation(&self) -> &Vec<Simulation> {
