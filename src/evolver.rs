@@ -65,7 +65,7 @@ impl Evolver {
         self.generations.last().unwrap()
     }
 
-    fn run_step(&mut self) {
+    fn step(&mut self) {
         match self.state {
             EvolverState::SimulatingGeneration { ref mut steps_left } => {
                 *steps_left -= 1;
@@ -93,12 +93,12 @@ impl Evolver {
         };
     }
 
-    pub fn step(&mut self, mut time: Duration) {
+    pub fn run(&mut self, mut time: Duration) {
         time += self.time_left_over;
 
         while time > STEPS_FREQUENCY {
             time -= STEPS_FREQUENCY;
-            self.run_step();
+            self.step();
         }
 
         self.time_left_over = time;

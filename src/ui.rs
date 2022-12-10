@@ -269,7 +269,7 @@ impl eframe::App for App {
                 let now = Instant::now();
 
                 if let Some(last_frame) = self.last_frame {
-                    self.evolver.step(now.duration_since(last_frame).mul_f32(SPEEDS[self.speed_setting]));
+                    self.evolver.run(now.duration_since(last_frame).mul_f32(SPEEDS[self.speed_setting]));
 
                     self.render(ui.painter(), total_size);
                 }
