@@ -4,7 +4,7 @@ use std::time::Duration;
 
 use crate::{
     creature::{CreatureBuilder, Position},
-    simulation::{Simulation, FLOOR_TOP_Y, MAX_WORLD_X, STEPS_FREQUENCY, STEPS_PER_SECOND},
+    simulation::{Simulation, FLOOR_TOP_Y, STEPS_FREQUENCY, STEPS_PER_SECOND, WORLD_X_SIZE},
 };
 
 const SIMULATIONS_PER_GENERATION: i32 = 100;
@@ -45,7 +45,7 @@ impl Evolver {
             for _ in 0..SIMULATIONS_PER_GENERATION {
                 generation.push(Simulation::new(
                     CreatureBuilder::random()
-                        .translate_bottom_center_to(Position::new(MAX_WORLD_X / 2.0, FLOOR_TOP_Y))
+                        .translate_bottom_center_to(Position::new(WORLD_X_SIZE / 2.0, FLOOR_TOP_Y))
                         .build(),
                 ))
             }

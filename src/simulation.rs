@@ -12,12 +12,13 @@ use crate::{
 
 pub const STEPS_PER_SECOND: i32 = 60;
 pub const STEPS_FREQUENCY: Duration = Duration::from_nanos(1_000_000_000 / STEPS_PER_SECOND as u64);
-pub const MAX_WORLD_X: f32 = 1000.0;
-pub const MAX_WORLD_Y: f32 = 560.0;
-pub const FLOOR_HEIGHT: f32 = MAX_WORLD_Y * 0.1;
-pub const FLOOR_TOP_Y: f32 = MAX_WORLD_Y - FLOOR_HEIGHT;
+pub const WORLD_X_SIZE: f32 = 1000.0;
+pub const WORLD_Y_SIZE: f32 = 560.0;
+pub const FLOOR_HEIGHT: f32 = WORLD_Y_SIZE * 0.1;
+pub const FLOOR_TOP_Y: f32 = WORLD_Y_SIZE - FLOOR_HEIGHT;
+
 const GRAVITY: f32 = 200.0;
-const SCORE_SCALE_FACTOR: f32 = 10.0 / MAX_WORLD_X;
+const SCORE_SCALE_FACTOR: f32 = 10.0 / WORLD_X_SIZE;
 // Muscle extension and contraction range, where 0.0 is normal, -1.0 is maximum contraction, and 1.0 is double extension
 const MAX_MUSCLE_CONTRACTION: f32 = -0.5;
 const MAX_MUSCLE_EXTENSION: f32 = 0.5;
@@ -56,7 +57,7 @@ impl Simulation {
 
         // Add floor
         let floor = RigidBodyBuilder::fixed()
-            .translation(vector![0.0, MAX_WORLD_Y])
+            .translation(vector![0.0, WORLD_Y_SIZE])
             .build();
         let floor_handle = rigid_body_set.insert(floor);
 

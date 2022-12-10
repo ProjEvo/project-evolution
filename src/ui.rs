@@ -4,7 +4,7 @@ use std::time::Instant;
 
 use crate::{
     evolver::{Evolver, EvolverState},
-    simulation::{Simulation, FLOOR_TOP_Y, MAX_WORLD_X, MAX_WORLD_Y, STEPS_PER_SECOND},
+    simulation::{Simulation, FLOOR_TOP_Y, WORLD_X_SIZE, WORLD_Y_SIZE, STEPS_PER_SECOND},
     util,
 };
 use eframe::{
@@ -198,8 +198,8 @@ impl App {
             rect: Rect {
                 min: Pos2::new(0.0, 0.0),
                 max: Pos2::new(
-                    util::transform_x_from_world_to_screen(MAX_WORLD_X, &self.screen_size),
-                    util::transform_y_from_world_to_screen(MAX_WORLD_Y, &self.screen_size),
+                    util::transform_x_from_world_to_screen(WORLD_X_SIZE, &self.screen_size),
+                    util::transform_y_from_world_to_screen(WORLD_Y_SIZE, &self.screen_size),
                 ),
             },
             rounding: Rounding::none(),
@@ -216,8 +216,8 @@ impl App {
                     util::transform_y_from_world_to_screen(FLOOR_TOP_Y, &self.screen_size),
                 ),
                 max: Pos2::new(
-                    util::transform_x_from_world_to_screen(MAX_WORLD_X, &self.screen_size),
-                    util::transform_y_from_world_to_screen(MAX_WORLD_Y, &self.screen_size),
+                    util::transform_x_from_world_to_screen(WORLD_X_SIZE, &self.screen_size),
+                    util::transform_y_from_world_to_screen(WORLD_Y_SIZE, &self.screen_size),
                 ),
             },
             rounding: Rounding::none(),
@@ -231,7 +231,7 @@ impl App {
     /// Renders the scene
     fn render(&mut self, painter: &Painter) {
         let generation = self.evolver.get_current_generation();
-        self.offset_x = (MAX_WORLD_X * (2.0 / 3.0))
+        self.offset_x = (WORLD_X_SIZE * (2.0 / 3.0))
             - generation
                 .iter()
                 .map(|simulation| simulation.get_bounds().1.x)
