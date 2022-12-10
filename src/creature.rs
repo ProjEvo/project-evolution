@@ -68,6 +68,8 @@ pub struct CreatureBuilder {
     id: Uuid,
     nodes: HashMap<Uuid, Node>,
     muscles: HashMap<Uuid, Muscle>,
+    movement_parameters: Option<HashMap<Uuid, MovementParameters>>,
+    colors: Option<CreatureColors>,
 }
 
 impl CreatureBuilder {
@@ -77,6 +79,8 @@ impl CreatureBuilder {
             id: Uuid::new_v4(),
             nodes: HashMap::new(),
             muscles: HashMap::new(),
+            movement_parameters: None,
+            colors: None,
         }
     }
 
@@ -130,6 +134,47 @@ impl CreatureBuilder {
         creature_builder
     }
 
+    /// Creates a [CreatureBuilder] by building off a previous [Creature] and mutating it.
+    ///
+    /// This method binds new Uuids to all objects out of necessity.
+    pub fn mutate(creature: &Creature) -> CreatureBuilder {
+        let mut builder = CreatureBuilder::new();
+
+        // Need to map old uuids to the new ones
+        let mut old_uuid_to_new_uuid: HashMap<Uuid, Uuid> = HashMap::new();
+
+        // Duplicate nodes
+        for (old_id, node) in creature.nodes() {
+            let new_node = Node::new(node.position, node.size);
+
+            old_uuid_to_new_uuid.insert(*old_id, new_node.id);
+
+            builder = builder.add_node(new_node);
+        }
+
+        // Duplicate muscles and movement parameters
+        let mut movement_parameters = HashMap::new();
+
+        for (old_id, muscle) in creature.muscles() {
+            let new_muscle = Muscle::new(
+                old_uuid_to_new_uuid[&muscle.from_id],
+                old_uuid_to_new_uuid[&muscle.to_id],
+            );
+
+            movement_parameters.insert(
+                new_muscle.id,
+                MovementParameters::mutate(&creature.movement_parameters()[old_id]),
+            );
+
+            builder = builder.add_muscle(new_muscle);
+        }
+
+        // Add MovementParameters and CharacterColors, then return
+        builder
+            .add_movement_parameters(movement_parameters)
+            .add_colors(CreatureColors::mutate(&creature.colors))
+    }
+
     /// Adds a [Node] to the [Creature]
     pub fn add_node(mut self, node: Node) -> CreatureBuilder {
         self.nodes.insert(node.id, node);
@@ -140,6 +185,23 @@ impl CreatureBuilder {
     /// Adds a [Muscle] to the [Creature]
     pub fn add_muscle(mut self, muscle: Muscle) -> CreatureBuilder {
         self.muscles.insert(muscle.id, muscle);
+
+        self
+    }
+
+    /// Sets the movement parameters of the [Creature]'s [Muscle]s, as keyed by their ids
+    pub fn add_movement_parameters(
+        mut self,
+        movement_parameters: HashMap<Uuid, MovementParameters>,
+    ) -> CreatureBuilder {
+        self.movement_parameters = Some(movement_parameters);
+
+        self
+    }
+
+    /// Sets the [colors](CreatureColors) of the [Creature]
+    pub fn add_colors(mut self, colors: CreatureColors) -> CreatureBuilder {
+        self.colors = Some(colors);
 
         self
     }
@@ -184,7 +246,7 @@ impl CreatureBuilder {
     /// ```
     ///
     /// Translating to a point P would put C there
-    pub fn translate_bottom_center_to(self, position: Position) -> CreatureBuilder {
+    pub fn translate_bottom_center_to(self, position: &Position) -> CreatureBuilder {
         let (top_left, bottom_right) = self.get_bounds();
 
         let translate_x = position.x - ((top_left.x + bottom_right.x) / 2.0);
@@ -195,10 +257,11 @@ impl CreatureBuilder {
 
     /// Builds the [CreatureBuilder] into a [Creature]
     pub fn build(self) -> Creature {
-        let movement_parameters =
-            MovementParameters::generate_for_muscles_and_nodes(&self.muscles, &self.nodes);
+        let movement_parameters = self.movement_parameters.unwrap_or_else(|| {
+            MovementParameters::generate_for_muscles_and_nodes(&self.muscles, &self.nodes)
+        });
 
-        let colors = CreatureColors::new();
+        let colors = self.colors.unwrap_or_else(|| CreatureColors::new());
 
         Creature {
             id: self.id,

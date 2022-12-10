@@ -1,4 +1,5 @@
 /// A position in the 2D plane represented by an x and a y
+#[derive(Debug, Clone, Copy)]
 pub struct Position {
     pub x: f32,
     pub y: f32,

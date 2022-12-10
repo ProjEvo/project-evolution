@@ -3,7 +3,7 @@ use std::{collections::HashMap, ops::RangeInclusive};
 use rand::Rng;
 use uuid::Uuid;
 
-use crate::simulation::STEPS_PER_SECOND;
+use crate::{simulation::STEPS_PER_SECOND, util};
 
 use super::{Muscle, Node};
 
@@ -12,7 +12,11 @@ type Range = RangeInclusive<i32>;
 const EXTENSION_PERIOD_RANGE: Range = STEPS_PER_SECOND / 4..=STEPS_PER_SECOND * 4;
 const CONTRACTION_PERIOD_RANGE: Range = STEPS_PER_SECOND / 4..=STEPS_PER_SECOND * 4;
 
+const MUTATE_EXTENSION_PERIOD_RANGE: Range = -STEPS_PER_SECOND / 30..=STEPS_PER_SECOND / 30;
+const MUTATE_CONTRACTION_PERIOD_RANGE: Range = -STEPS_PER_SECOND / 30..=STEPS_PER_SECOND / 30;
+
 /// Represents a set of parameters for when and how a muscle should move, in steps
+#[derive(Debug)]
 pub struct MovementParameters {
     muscle_length: f32,
     extension_period: i32,
@@ -45,6 +49,28 @@ impl MovementParameters {
         }
 
         id_to_movement_parameters
+    }
+
+    /// Creates a new MovementParameters that is a mutation of the passed in one
+    pub fn mutate(movement_parameters: &MovementParameters) -> MovementParameters {
+        let mut rng = rand::thread_rng();
+
+        let new_extension_period = util::clamp_to_range(
+            movement_parameters.extension_period + rng.gen_range(MUTATE_EXTENSION_PERIOD_RANGE),
+            EXTENSION_PERIOD_RANGE,
+        );
+
+        let new_contraction_period = util::clamp_to_range(
+            movement_parameters.contraction_period + rng.gen_range(MUTATE_CONTRACTION_PERIOD_RANGE),
+            CONTRACTION_PERIOD_RANGE,
+        );
+
+        MovementParameters {
+            muscle_length: movement_parameters.muscle_length,
+
+            extension_period: new_extension_period,
+            contraction_period: new_contraction_period,
+        }
     }
 
     /// Gets the normal muscle length
@@ -85,16 +111,5 @@ impl MovementParameters {
 
         // Contraction period (1 -> 0)
         1.0 - (step_delta as f32 / self.contraction_period as f32)
-    }
-}
-
-impl Clone for MovementParameters {
-    fn clone(&self) -> Self {
-        Self {
-            muscle_length: self.muscle_length,
-            offset: self.offset,
-            extension_period: self.extension_period,
-            contraction_period: self.contraction_period,
-        }
     }
 }

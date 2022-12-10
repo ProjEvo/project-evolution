@@ -22,7 +22,7 @@ use egui::{
 
 use crate::res;
 
-const SPEEDS: [f32; 9] = [0.0, 0.25, 0.5, 0.75, 1.0, 1.5, 2.0, 3.0, 5.0];
+const SPEEDS: [f32; 11] = [0.0, 0.25, 0.5, 0.75, 1.0, 1.5, 2.0, 3.0, 5.0, 7.5, 10.0];
 const DEFAULT_SPEED: usize = 4;
 const MIN_MUSCLE_THICKNESS: f32 = 1.5;
 const MAX_MUSCLE_THICKNESS: f32 = 3.0;
