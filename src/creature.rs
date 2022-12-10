@@ -261,7 +261,7 @@ impl CreatureBuilder {
             MovementParameters::generate_for_muscles_and_nodes(&self.muscles, &self.nodes)
         });
 
-        let colors = self.colors.unwrap_or_else(|| CreatureColors::new());
+        let colors = self.colors.unwrap_or_else(CreatureColors::new);
 
         Creature {
             id: self.id,

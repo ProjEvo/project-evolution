@@ -102,7 +102,7 @@ impl Simulation {
             let to_node_position = &nodes.get(&muscle.to_id).unwrap().position;
             let from_node_body_handle = node_id_to_rigid_body_handles.get(&muscle.from_id).unwrap();
             let to_node_body_handle = node_id_to_rigid_body_handles.get(&muscle.to_id).unwrap();
-            let movement_parameters = muscle_id_to_movement_parameters.get(id).unwrap().clone();
+            let movement_parameters = muscle_id_to_movement_parameters.get(id).unwrap();
 
             let offset = point![
                 to_node_position.x - from_node_position.x,

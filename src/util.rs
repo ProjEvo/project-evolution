@@ -83,20 +83,18 @@ pub fn cmp_f32(a: &f32, b: &f32) -> Ordering {
 pub fn clamp_to_range<T: PartialOrd<T> + Clone, R: RangeBounds<T>>(input: T, range: R) -> T {
     match range.start_bound() {
         Bound::Included(start) | Bound::Excluded(start) => {
-            match input.partial_cmp(start).expect("Cannot clamp NAN") {
-                Ordering::Less => return start.clone(),
-                _ => (),
-            };
+            if input.partial_cmp(start).expect("Cannot clamp NAN") == Ordering::Less {
+                return start.clone();
+            }
         }
         Bound::Unbounded => panic!("Must be bounded!"),
     }
 
     match range.end_bound() {
         Bound::Included(end) | Bound::Excluded(end) => {
-            match input.partial_cmp(end).expect("Cannot clamp NAN") {
-                Ordering::Greater => return end.clone(),
-                _ => (),
-            };
+            if input.partial_cmp(end).expect("Cannot clamp NAN") == Ordering::Greater {
+                return end.clone();
+            }
         }
         Bound::Unbounded => panic!("Must be bounded!"),
     }

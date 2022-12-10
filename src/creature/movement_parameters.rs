@@ -84,7 +84,7 @@ impl MovementParameters {
 
         let step_delta = step % total;
 
-        return step_delta < self.extension_period;
+        step_delta < self.extension_period
     }
 
     /// Gets the extension delta based on existing parameters
