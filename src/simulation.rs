@@ -195,6 +195,7 @@ impl Simulation {
             .translation()
     }
 
+    /// Gets the extension delta of a node by it's id
     pub fn get_extension_delta_of_muscle(&self, id: Uuid) -> f32 {
         self.creature
             .movement_parameters()
