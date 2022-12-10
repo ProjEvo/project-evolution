@@ -202,12 +202,12 @@ impl Simulation {
     }
 
     /// Gets the extension delta of a node by it's id
-    pub fn get_extension_delta_of_muscle(&self, id: Uuid) -> f32 {
+    pub fn is_muscle_extending(&self, id: Uuid) -> bool {
         self.creature
             .movement_parameters()
             .get(&id)
             .unwrap()
-            .get_extension_at(self.steps)
+            .is_extending(self.steps)
     }
 
     /// Gets the bounds of the [Creature] in the form (top_left, bottom_right)

@@ -50,8 +50,22 @@ impl MovementParameters {
         id_to_movement_parameters
     }
 
+    /// Gets the normal muscle length
     pub fn muscle_length(&self) -> f32 {
         self.muscle_length
+    }
+
+    /// Returns true if extending, false if contracting
+    pub fn is_extending(&self, step: i32) -> bool {
+        let total = self.extension_period + self.contraction_period;
+
+        if step < self.offset {
+            return false;
+        }
+
+        let step_delta = (step - self.offset) % total;
+
+        return step_delta < self.extension_period;
     }
 
     /// Gets the extension delta based on existing parameters
