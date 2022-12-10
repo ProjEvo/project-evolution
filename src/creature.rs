@@ -146,6 +146,23 @@ impl CreatureBuilder {
         self
     }
 
+    /// Gets the bounds of the [Creature], represented by the top left and bottom right
+    fn get_bounds(&self) -> (Position, Position) {
+        let x_pos_iter = self.nodes.values().map(|node| node.position.x);
+        let y_pos_iter = self.nodes.values().map(|node| node.position.y);
+
+        (
+            Position::new(
+                x_pos_iter.clone().min_by(util::cmp_f32).unwrap(),
+                y_pos_iter.clone().min_by(util::cmp_f32).unwrap(),
+            ),
+            Position::new(
+                x_pos_iter.max_by(util::cmp_f32).unwrap(),
+                y_pos_iter.max_by(util::cmp_f32).unwrap(),
+            ),
+        )
+    }
+
     /// Translates a creature x to the right and y down
     pub fn translate(mut self, x: f32, y: f32) -> CreatureBuilder {
         for node in &mut self.nodes.values_mut() {

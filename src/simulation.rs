@@ -5,7 +5,10 @@ use std::{collections::HashMap, time::Duration};
 use rapier::prelude::*;
 use uuid::Uuid;
 
-use crate::creature::{Creature, MovementParameters};
+use crate::{
+    creature::{Creature, MovementParameters},
+    util,
+};
 
 pub const STEPS_PER_SECOND: i32 = 60;
 pub const STEPS_FREQUENCY: Duration = Duration::from_nanos(1_000_000_000 / STEPS_PER_SECOND as u64);
@@ -215,7 +218,7 @@ impl Simulation {
                     .unwrap()
             })
             .map(|body| body.translation().x)
-            .max_by(|a, b| a.partial_cmp(b).unwrap())
+            .max_by(util::cmp_f32)
             .unwrap()
     }
 

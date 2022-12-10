@@ -1,5 +1,7 @@
 //! Stores generic util methods that don't really belong in a specific module
 
+use std::cmp::Ordering;
+
 const MAX_RGB: u8 = 255;
 
 /// Takes in hsv and outputs rgb, where:
@@ -29,6 +31,14 @@ pub fn hsv_to_rgb(h: u16, s: u8, v: u8) -> (u8, u8, u8) {
         4 => (t, p, rv),
         _ => (rv, p, q),
     }
+}
+
+/// Compares two f32s a and b
+///
+/// # Panics
+/// When a or b is NAN
+pub fn cmp_f32(a: &f32, b: &f32) -> Ordering {
+    a.partial_cmp(b).expect("NAN!")
 }
 
 #[cfg(test)]
