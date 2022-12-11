@@ -1,6 +1,7 @@
 //! Contains resources used by the program, such as the application icon
 
 use eframe::IconData;
+use egui::ColorImage;
 
 #[cfg(COMPILING_PLATFORM = "UNIX")]
 macro_rules! main_separator {
@@ -24,6 +25,14 @@ const ICON: &[u8] = include_bytes!(concat!(
     "icon.png"
 ));
 
+const BANNER: &[u8] = include_bytes!(concat!(
+    "..",
+    main_separator!(),
+    "res",
+    main_separator!(),
+    "banner.png"
+));
+
 /// Loads the icon into [IconData]
 pub fn load_icon_data() -> IconData {
     let (icon_rgba, icon_width, icon_height) = {
@@ -40,4 +49,16 @@ pub fn load_icon_data() -> IconData {
         width: icon_width,
         height: icon_height,
     }
+}
+
+/// Loads the banner into [ColorImage]
+pub fn load_banner_data() -> ColorImage {
+    let image = image::load_from_memory(BANNER)
+        .expect("Failed to load banner image")
+        .to_rgba8();
+
+    let size = [image.width() as usize, image.height() as usize];
+    let pixels = image.as_flat_samples();
+
+    ColorImage::from_rgba_unmultiplied(size, pixels.as_slice())
 }
