@@ -321,6 +321,17 @@ impl App {
 
         match state {
             EvolverState::SimulatingGeneration { steps_left } => {
+                let on_generation = self.evolver.on_generation();
+
+                paint_text(
+                    format!("Generation {}", on_generation),
+                    position,
+                    60.0,
+                    TEXT_COLOR,
+                    true,
+                    painter,
+                );
+                position.y += 60.0;
                 paint_text(
                     format!("{:.2}s", steps_left as f32 / STEPS_PER_SECOND as f32),
                     position,
