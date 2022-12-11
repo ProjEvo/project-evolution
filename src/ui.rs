@@ -16,8 +16,8 @@ use eframe::{
     Theme,
 };
 use egui::{
-    text::LayoutJob, Align, Color32, FontFamily, FontId, Layout, Painter, Pos2, Rect, RichText,
-    Rounding, Stroke, TextFormat, Vec2,
+    text::LayoutJob, Color32, FontFamily, FontId, Painter, Pos2, Rect, RichText, Rounding, Stroke,
+    TextFormat, Vec2,
 };
 
 use crate::res;
@@ -311,6 +311,47 @@ impl App {
         }
     }
 
+    /// Paints the info text like the timer and generation
+    fn paint_info_text(&self, painter: &Painter) {
+        let state = self.evolver.state();
+        let mut position = Pos2::new(
+            util::transform_x_from_world_to_screen(WORLD_X_SIZE / 2.0, &self.screen_size),
+            0.0,
+        );
+
+        match state {
+            EvolverState::SimulatingGeneration { steps_left } => {
+                paint_text(
+                    format!("{:.2}s", steps_left as f32 / STEPS_PER_SECOND as f32),
+                    position,
+                    40.0,
+                    TEXT_COLOR,
+                    true,
+                    painter,
+                );
+            }
+            EvolverState::Evolving { steps_left: _ } => {
+                paint_text(
+                    "Evolving...".to_owned(),
+                    position,
+                    40.0,
+                    TEXT_COLOR,
+                    true,
+                    painter,
+                );
+                position.y += 40.0;
+                paint_text(
+                    "The best creature's offspring are being generated.".to_owned(),
+                    position,
+                    30.0,
+                    TEXT_COLOR,
+                    true,
+                    painter,
+                );
+            }
+        };
+    }
+
     /// Renders the scene
     fn render(&mut self, painter: &Painter) {
         let generation = self.evolver.current_generation();
@@ -325,6 +366,7 @@ impl App {
         );
         self.paint_scenery(painter);
         self.paint_generation(generation, painter);
+        self.paint_info_text(painter);
     }
 }
 
@@ -356,33 +398,7 @@ impl eframe::App for App {
 
                 self.last_frame = Some(now);
 
-                let state = self.evolver.state();
-
-                ui.with_layout(Layout::top_down(Align::Center), |ui| {
-                    match state {
-                        EvolverState::SimulatingGeneration { steps_left } => {
-                            ui.heading(
-                                RichText::new(format!(
-                                    "{:.2}s",
-                                    steps_left as f32 / STEPS_PER_SECOND as f32
-                                ))
-                                .font(FontId::proportional(40.0))
-                                .color(TEXT_COLOR),
-                            );
-                        }
-                        EvolverState::Evolving { steps_left: _ } => {
-                            ui.heading(
-                                RichText::new("Evolving...")
-                                    .font(FontId::proportional(40.0))
-                                    .color(TEXT_COLOR),
-                            );
-                            ui.label(
-                                RichText::new("The best creature's offspring are being generated.")
-                                    .font(FontId::proportional(25.0))
-                                    .color(TEXT_COLOR),
-                            );
-                        }
-                    };
+                egui::containers::Frame::none().inner_margin(10.0).show(ui, |ui| {
                     ui.horizontal_top(|ui| {
                         if ui.button("<").clicked() {
                             self.speed_setting = usize::max(0, self.speed_setting - 1);
