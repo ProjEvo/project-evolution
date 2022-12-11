@@ -369,6 +369,40 @@ impl App {
         self.paint_generation(generation, painter);
         self.paint_info_text(painter);
     }
+
+    /// Renders the simulation
+    fn render_simulation(&mut self, ui: &mut egui::Ui) {
+        let now = Instant::now();
+
+        if let Some(last_frame) = self.last_frame {
+            self.evolver.run(
+                now.duration_since(last_frame)
+                    .mul_f32(SPEEDS[self.speed_setting]),
+            );
+
+            self.paint_scene(ui.painter());
+        }
+
+        self.last_frame = Some(now);
+
+        egui::containers::Frame::none().inner_margin(10.0).show(ui, |ui| {
+                    ui.horizontal_top(|ui| {
+                        if ui.button("<").clicked() {
+                            self.speed_setting = usize::max(0, self.speed_setting - 1);
+                        }
+                        ui.label(
+                            RichText::new(
+                                format! {"Speed: {}x", SPEEDS.get(self.speed_setting as usize).unwrap()},
+                            )
+                            .font(FontId::proportional(25.0))
+                            .color(TEXT_COLOR),
+                        );
+                        if ui.button(">").clicked() {
+                            self.speed_setting = usize::min(SPEEDS.len() - 1, self.speed_setting + 1);
+                        }
+                    });
+                });
+    }
 }
 
 impl eframe::App for App {
@@ -389,33 +423,10 @@ impl eframe::App for App {
             .show(ctx, |ui| {
                 self.screen_size = ui.available_size();
 
-                let now = Instant::now();
-
-                if let Some(last_frame) = self.last_frame {
-                    self.evolver.run(now.duration_since(last_frame).mul_f32(SPEEDS[self.speed_setting]));
-
-                    self.paint_scene(ui.painter());
+                match self.state {
+                    AppState::MainMenu => todo!(),
+                    AppState::Simulation => self.render_simulation(ui),
                 }
-
-                self.last_frame = Some(now);
-
-                egui::containers::Frame::none().inner_margin(10.0).show(ui, |ui| {
-                    ui.horizontal_top(|ui| {
-                        if ui.button("<").clicked() {
-                            self.speed_setting = usize::max(0, self.speed_setting - 1);
-                        }
-                        ui.label(
-                            RichText::new(
-                                format! {"Speed: {}x", SPEEDS.get(self.speed_setting as usize).unwrap()},
-                            )
-                            .font(FontId::proportional(25.0))
-                            .color(TEXT_COLOR),
-                        );
-                        if ui.button(">").clicked() {
-                            self.speed_setting = usize::min(SPEEDS.len() - 1, self.speed_setting + 1);
-                        }
-                    });
-                });
             });
 
         // Logic to continuously re-render the UI
@@ -430,6 +441,6 @@ enum AppState {
 
 impl Default for AppState {
     fn default() -> Self {
-        Self::MainMenu
+        Self::Simulation
     }
 }
