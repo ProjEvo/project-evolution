@@ -55,6 +55,7 @@ pub fn init() {
 /// Creates new egui ui struct used to populate objects into new Window
 struct App {
     evolver: Evolver,
+    state: AppState,
     last_frame: Option<Instant>,
     speed_setting: usize,
     screen_size: Vec2,
@@ -352,8 +353,8 @@ impl App {
         };
     }
 
-    /// Renders the scene
-    fn render(&mut self, painter: &Painter) {
+    /// Paints the scene
+    fn paint_scene(&mut self, painter: &Painter) {
         let generation = self.evolver.current_generation();
         self.max_x = generation
             .iter()
@@ -393,7 +394,7 @@ impl eframe::App for App {
                 if let Some(last_frame) = self.last_frame {
                     self.evolver.run(now.duration_since(last_frame).mul_f32(SPEEDS[self.speed_setting]));
 
-                    self.render(ui.painter());
+                    self.paint_scene(ui.painter());
                 }
 
                 self.last_frame = Some(now);
@@ -419,5 +420,16 @@ impl eframe::App for App {
 
         // Logic to continuously re-render the UI
         ctx.request_repaint();
+    }
+}
+
+enum AppState {
+    MainMenu,
+    Simulation,
+}
+
+impl Default for AppState {
+    fn default() -> Self {
+        Self::MainMenu
     }
 }
