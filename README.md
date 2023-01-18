@@ -4,6 +4,7 @@
 <div align="center">
 Generate your creatures and watch them evolve through the generations!
 </div>
+<br>
 <div align="center">
   
 ![Demo](screenshots/demo.gif)
