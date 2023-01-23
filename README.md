@@ -1,6 +1,8 @@
 <div align="center">
-    <img alt="Project Evolution" src="res/banner.png" width="400px">
+    <img alt="Project Evolution" src="res/banner_large.png#gh-dark-mode-only" width="400px">
+    <img alt="Project Evolution" src="res/banner_large_light_theme.png#gh-light-mode-only" width="400px">
 </div>
+<br>
 <div align="center">
 Generate your creatures and watch them evolve through the generations!
 </div>
